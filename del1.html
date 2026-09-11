@@ -68,7 +68,7 @@
   .deck{
     flex:1 1 auto;
     display:flex;
-    width:1100vw;
+    width:1200vw;
     height:100%;
     min-height:0;
     overflow:hidden;
@@ -385,19 +385,28 @@
       </div>
     </section>
 
-    <!-- ============ SLIDE 3c — OPPSUMMERING DEL 1 + LEGO-ØVELSE ============ -->
+    <!-- ============ SLIDE 3c — OPPSUMMERING DEL 1 ============ -->
     <section class="slide" id="slide-recap1">
       <div class="slide-inner">
         <div class="eyebrow">Kapittelavslutning</div>
         <h1 class="slide-h">KI enkelt forklart — Del 1</h1>
-        <p class="slide-sub">IM Akademiet &middot; en rask oppsummering, og en praktisk øvelse før vi går videre.</p>
-
-        <div class="btn-row">
-          <button class="btn accent" id="recap1Btn">Vis meg →</button>
-        </div>
+        <p class="slide-sub">IM Akademiet &middot; en rask oppsummering før vi går videre.</p>
 
         <div class="panel" style="width:100%; min-height:290px;">
           <div id="recap1Body"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ SLIDE 3d — PRAKTISK ØVELSE: LEGO-PROMPTING ============ -->
+    <section class="slide" id="slide-lego">
+      <div class="slide-inner">
+        <div class="eyebrow">Praktisk øvelse</div>
+        <h1 class="slide-h">Rollespill: vær en språkmodell</h1>
+        <p class="slide-sub">Lego-prompting &middot; test hvor presist språk må være for at en «KI» skal forstå deg.</p>
+
+        <div class="panel" style="width:100%; min-height:290px;">
+          <div id="legoBody"></div>
         </div>
       </div>
     </section>
@@ -415,7 +424,7 @@
 /* =========================================================
    DECK NAVIGATION
    ========================================================= */
-const SLIDE_TITLES = ["Software endret verden", "Tid til 1 million", "KI spiser software", "Hjerne og hender", "KI vs. mennesker", "Fra tekst til gjetning", "Hva skjer i chat", "Context engineering", "Trening, kontekst & tokens", "Ulike modeller, ulike styrker", "Del 1 — oppsummering"];
+const SLIDE_TITLES = ["Software endret verden", "Tid til 1 million", "KI spiser software", "Hjerne og hender", "KI vs. mennesker", "Fra tekst til gjetning", "Hva skjer i chat", "Context engineering", "Trening, kontekst & tokens", "Ulike modeller, ulike styrker", "Del 1 — oppsummering", "Praktisk øvelse — Lego-prompting"];
 let current = 0;
 const total = SLIDE_TITLES.length;
 const deck = document.getElementById('deck');
@@ -1621,11 +1630,9 @@ modAdvance();
 
 
 /* =========================================================
-   SLIDE 3c — RECAP OF PART 1 + LEGO PROMPTING EXERCISE
+   SLIDE 3c — RECAP OF PART 1
    ========================================================= */
 const recap1Body = document.getElementById('recap1Body');
-const recap1Btn = document.getElementById('recap1Btn');
-let recap1Step = 0;
 
 const RECAP1_TOPICS = [
   'Software endret verden — Andreessen, 2011',
@@ -1666,8 +1673,7 @@ const LEGO_SVG = `
   </svg>
 `;
 
-const RECAP1_STEPS = [
-  ()=>`
+recap1Body.innerHTML = `
     <div class="tag" style="margin-bottom:12px; background:var(--ink); color:#fff; border-color:var(--ink);">✅ DEL 1 FULLFØRT</div>
     <div class="fade-item" style="display:grid; grid-template-columns:repeat(2,1fr); gap:7px; margin-bottom:6px;">
       ${RECAP1_TOPICS.map((t,i)=>`
@@ -1676,11 +1682,16 @@ const RECAP1_STEPS = [
           <span style="font-size:11.5px; color:var(--ink); line-height:1.35;">${t}</span>
         </div>`).join('')}
     </div>
-    <p class="fade-item" style="font-size:12.5px; color:var(--ink-soft); line-height:1.6; margin:8px 0 0 0; text-align:center;">Ti temaer, fra &laquo;hvorfor nå&raquo; til treningsprosessen bak modellene &mdash; klikk p&aring; et tema for &aring; g&aring; tilbake dit. N&aring;: en praktisk øvelse f&oslash;r vi g&aring;r videre til Del 2.</p>
-  `,
-  ()=>`
+    <p class="fade-item" style="font-size:12.5px; color:var(--ink-soft); line-height:1.6; margin:8px 0 0 0; text-align:center;">Ti temaer, fra &laquo;hvorfor nå&raquo; til treningsprosessen bak modellene &mdash; klikk p&aring; et tema for &aring; g&aring; tilbake dit. N&aring;: en praktisk &oslash;velse f&oslash;r vi g&aring;r videre til Del 2.</p>
+`;
+fadeIn(recap1Body, 200, 150);
+
+/* =========================================================
+   SLIDE 3d — LEGO PROMPTING EXERCISE
+   ========================================================= */
+const legoBody = document.getElementById('legoBody');
+legoBody.innerHTML = `
     <div class="tag warn" style="margin-bottom:12px;">PRAKTISK ØVELSE · LEGO-PROMPTING</div>
-    <div class="fade-item" style="font-family:var(--serif); font-weight:600; font-size:16px; margin-bottom:10px; text-align:center;">Rollespill: vær en språkmodell</div>
     <div class="fade-item">${LEGO_SVG}</div>
     <div class="fade-item" style="border:1px solid var(--line); border-radius:8px; padding:12px 14px; margin-top:10px;">
       <ol style="margin:0; padding-left:18px; font-size:12.5px; color:var(--ink); line-height:1.75;">
@@ -1692,24 +1703,8 @@ const RECAP1_STEPS = [
       </ol>
     </div>
     <p class="fade-item" style="font-family:var(--serif); font-style:italic; font-weight:500; font-size:13.5px; line-height:1.5; margin:10px 0 0 0; text-align:center;">Akkurat som en KI m&aring; &laquo;KI-modellen&raquo; bygge kun ut fra ordene den f&aring;r &mdash; ingen bilder, ingen tankeleser. Jo mer presist spr&aring;k, jo bedre resultat.</p>
-  `
-];
-
-function recap1Reset(){
-  recap1Step = 0;
-  recap1Body.innerHTML = '<p style="color:var(--ink-faint); font-size:13.5px;">Trykk «Vis meg» for å starte.</p>';
-  recap1Btn.textContent = 'Vis meg →';
-}
-recap1Reset();
-recap1Btn.addEventListener('click', recap1Advance);
-function recap1Advance(){
-  recap1Step++;
-  if(recap1Step>RECAP1_STEPS.length){ recap1Reset(); return; }
-  recap1Body.innerHTML = RECAP1_STEPS[recap1Step-1]();
-  fadeIn(recap1Body, 80, 130);
-  recap1Btn.textContent = recap1Step===RECAP1_STEPS.length ? '↺ Start på nytt' : 'Neste steg ›';
-}
-recap1Advance();
+`;
+fadeIn(legoBody, 200, 150);
 
 
 /* =========================================================

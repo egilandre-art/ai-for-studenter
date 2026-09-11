@@ -198,6 +198,7 @@
     background:var(--line-strong); cursor:pointer; transition: background .25s ease, width .25s ease;
   }
   .seg.active{ background:var(--accent); width:38px; }
+  .recap-topic:hover{ border-color:var(--accent); background:var(--accent-soft); }
 
   @media (max-width:640px){
     .topbar{ padding-top:10px; }
@@ -707,7 +708,7 @@ brainHandsBody.innerHTML = `
         <div class="mono" style="font-size:9.5px; color:var(--ink-faint); margin-top:6px; text-align:center;">EKSEMPEL: FIGURE 02 — humanoid robot hos BMW (Spartanburg)</div>
       </div>
     </div>
-    <p class="fade-item" style="font-size:13.5px; line-height:1.6; margin:0;">Tidligere teknologibølger erstattet <b>én</b> av delene: maskiner erstattet muskler, software effektiviserte kontorarbeid. <b>KI er den første teknologien som begynner å erstatte begge samtidig</b> — og rører dermed ved selve knapphetsfaktoren i økonomien: menneskelig arbeidskraft.</p>
+    <p class="fade-item" style="font-size:13.5px; line-height:1.6; margin:0;">Tidligere teknologibølger erstattet <b>én</b> av delene: maskiner erstattet muskler, software effektiviserte kontorarbeid. <b>KI gjør teknologi tilgjengelig for langt flere og berører veldig raskt begge samtidig</b> — og rører dermed ved selve knapphetsfaktoren i økonomien: menneskelig arbeidskraft.</p>
 `;
 fadeIn(brainHandsBody, 200, 150);
 
@@ -1670,12 +1671,12 @@ const RECAP1_STEPS = [
     <div class="tag" style="margin-bottom:12px; background:var(--ink); color:#fff; border-color:var(--ink);">✅ DEL 1 FULLFØRT</div>
     <div class="fade-item" style="display:grid; grid-template-columns:repeat(2,1fr); gap:7px; margin-bottom:6px;">
       ${RECAP1_TOPICS.map((t,i)=>`
-        <div style="display:flex; align-items:baseline; gap:8px; border:1px solid var(--line); border-radius:6px; padding:7px 10px;">
+        <div class="recap-topic" onclick="goTo(${i})" style="display:flex; align-items:baseline; gap:8px; border:1px solid var(--line); border-radius:6px; padding:7px 10px; cursor:pointer; transition:border-color .15s ease, background .15s ease;">
           <span class="mono" style="font-size:10px; color:var(--accent); font-weight:700;">${String(i+1).padStart(2,'0')}</span>
           <span style="font-size:11.5px; color:var(--ink); line-height:1.35;">${t}</span>
         </div>`).join('')}
     </div>
-    <p class="fade-item" style="font-size:12.5px; color:var(--ink-soft); line-height:1.6; margin:8px 0 0 0; text-align:center;">Ti temaer, fra &laquo;hvorfor nå&raquo; til treningsprosessen bak modellene. Nå: en praktisk øvelse f&oslash;r vi g&aring;r videre til Del 2.</p>
+    <p class="fade-item" style="font-size:12.5px; color:var(--ink-soft); line-height:1.6; margin:8px 0 0 0; text-align:center;">Ti temaer, fra &laquo;hvorfor nå&raquo; til treningsprosessen bak modellene &mdash; klikk p&aring; et tema for &aring; g&aring; tilbake dit. N&aring;: en praktisk øvelse f&oslash;r vi g&aring;r videre til Del 2.</p>
   `,
   ()=>`
     <div class="tag warn" style="margin-bottom:12px;">PRAKTISK ØVELSE · LEGO-PROMPTING</div>

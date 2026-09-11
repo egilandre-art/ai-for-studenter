@@ -1,0 +1,11 @@
+# Source material (not for public redistribution)
+*.pdf
+
+# Local Claude Code config
+.claude/
+
+# Superseded by del1.html + del2.html (kept locally, not shared)
+ai-for-studenter.html
+
+# OS
+.DS_Store

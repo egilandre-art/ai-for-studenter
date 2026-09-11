@@ -1,0 +1,1848 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI forklart enkelt — Del 1 — IM Akademiet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#F1F0EA;
+    --surface:#FFFFFF;
+    --surface-2:#F8F7F3;
+    --ink:#14171C;
+    --ink-soft:#585F68;
+    --ink-faint:#9BA0A6;
+    --line:#DCDFD9;
+    --line-strong:#C4C9C2;
+    --accent:#3452E1;
+    --accent-soft:#E7EBFC;
+    --accent-deep:#212F9E;
+    --live:#7FCB3F;
+    --live-deep:#4C8C1E;
+    --warn:#E8465F;
+    --warn-soft:#FDE8EC;
+    --amber:#DB9A22;
+    --amber-soft:#FBF0DB;
+    --serif:'Fraunces', serif;
+    --sans:'Inter', sans-serif;
+    --mono:'JetBrains Mono', monospace;
+    --radius:10px;
+    --shadow: 0 1px 2px rgba(20,23,28,0.05), 0 10px 28px rgba(20,23,28,0.07);
+  }
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; padding:0; height:100%; background:var(--bg); color:var(--ink); font-family:var(--sans); overflow:hidden; }
+  body{
+    background-image:
+      linear-gradient(rgba(20,23,28,0.045) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(20,23,28,0.045) 1px, transparent 1px);
+    background-size: 34px 34px;
+    background-position: -1px -1px;
+  }
+  h1,h2,h3{ font-family:var(--serif); font-weight:600; margin:0; }
+  button{ font-family:var(--sans); cursor:pointer; }
+  .mono{ font-family:var(--mono); }
+
+  /* ---------- layout shell ---------- */
+  .deck-wrap{ position:relative; width:100vw; height:100vh; display:flex; flex-direction:column; }
+
+  .topbar{
+    display:flex; align-items:center; justify-content:space-between;
+    padding: 18px clamp(18px,4vw,52px) 0;
+    flex:0 0 auto;
+  }
+  .brand{ display:flex; align-items:center; gap:10px; }
+  .brand-mark{
+    width:26px; height:26px; border-radius:5px;
+    background: var(--ink); color:var(--bg);
+    display:flex; align-items:center; justify-content:center;
+    font-family:var(--mono); font-size:12px; font-weight:700;
+  }
+  .brand-text{ font-family:var(--serif); font-size:17px; color:var(--ink); font-weight:600; }
+  .brand-sub{ font-family:var(--mono); font-size:10px; color:var(--ink-faint); letter-spacing:.08em; text-transform:uppercase; margin-left:2px; }
+  .slide-title-mini{ font-family:var(--mono); font-size:11.5px; color:var(--ink-soft); letter-spacing:.03em; }
+  .slide-title-mini b{ color:var(--ink); }
+
+  .deck{
+    flex:1 1 auto;
+    display:flex;
+    width:1100vw;
+    height:100%;
+    min-height:0;
+    overflow:hidden;
+    transform: translateX(0);
+    transition: transform 1.05s cubic-bezier(.76,0,.24,1);
+  }
+  .slide{
+    width:100vw; height:100%;
+    flex:0 0 100vw;
+    display:flex; flex-direction:column; align-items:center; justify-content:flex-start;
+    padding: 6px clamp(18px,5vw,68px) 8px;
+    overflow-y:auto; overflow-x:hidden;
+  }
+  .slide-inner{
+    width:100%; max-width:1120px; height:100%;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    gap: clamp(6px,1.3vh,16px);
+  }
+
+  .eyebrow{
+    font-family:var(--mono); font-size: clamp(10.5px,1.1vw,12px);
+    color: var(--accent); text-transform:uppercase; letter-spacing:.16em; font-weight:600;
+  }
+  h1.slide-h{
+    font-size: clamp(23px,3.1vw,38px);
+    margin: 2px 0 0 0; text-align:center; line-height:1.18; letter-spacing:-0.01em;
+    text-wrap: balance;
+  }
+  p.slide-sub{
+    margin:0; text-align:center; color:var(--ink-soft); font-weight:500;
+    font-size: clamp(12.5px,1.25vw,15.5px);
+    max-width:640px; line-height:1.5;
+    text-wrap: balance;
+  }
+
+  /* interface panel */
+  .panel{
+    background: var(--surface);
+    border:1px solid var(--line);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: clamp(10px,1.6vh,20px) clamp(14px,2vw,26px);
+    position:relative;
+  }
+  .panel::before, .panel::after{
+    content:''; position:absolute; width:13px; height:13px; pointer-events:none;
+    border-color:var(--accent); border-style:solid; opacity:.6;
+  }
+  .panel::before{ top:-1px; left:-1px; border-width:2px 0 0 2px; }
+  .panel::after{ bottom:-1px; right:-1px; border-width:0 2px 2px 0; }
+
+  svg.illo{ width:100%; height:auto; display:block; overflow:visible; }
+
+  .fade-item{ opacity:0; transform:translateY(8px); transition:opacity .7s ease, transform .7s ease; }
+  .fade-item.show{ opacity:1; transform:translateY(0); }
+
+  /* ---------- tags / badges ---------- */
+  .tag{
+    font-family:var(--mono); font-size:10.5px; letter-spacing:.07em; text-transform:uppercase;
+    color:var(--accent); background:var(--accent-soft); border:1px solid var(--accent);
+    padding:3px 9px; border-radius:4px; display:inline-flex; align-items:center; gap:6px;
+    font-weight:600;
+  }
+  .tag.live::before{ content:''; width:6px; height:6px; border-radius:50%; background:var(--live); box-shadow:0 0 0 3px rgba(127,203,63,.28); animation:blink 1.4s ease-in-out infinite; }
+  .tag.warn{ color:var(--warn); background:var(--warn-soft); border-color:var(--warn); }
+  .tag.ghost{ color:var(--ink-soft); background:var(--surface-2); border-color:var(--line); }
+  @keyframes blink{ 0%,100%{opacity:1;} 50%{opacity:.35;} }
+
+  /* ---------- buttons ---------- */
+  .btn{
+    font-weight:700; font-size:13.5px; border:1.5px solid var(--ink);
+    background:var(--ink); color:var(--bg);
+    padding:10px 20px; border-radius: 7px;
+    transition: transform .18s ease, box-shadow .18s ease, opacity .18s ease;
+    font-family:var(--sans);
+  }
+  .btn:hover{ transform: translateY(-1px); box-shadow: 0 6px 16px rgba(20,23,28,0.18); }
+  .btn:active{ transform: translateY(0); }
+  .btn.alt{ background:var(--surface); color:var(--ink); }
+  .btn.accent{ background:var(--accent); border-color:var(--accent); color:#fff; }
+  .btn.ghost{ background:transparent; color:var(--ink); }
+  .btn:disabled{ opacity:.35; cursor:default; transform:none; box-shadow:none; }
+
+  .btn-row{ display:flex; gap:10px; align-items:center; justify-content:center; flex-wrap:wrap; }
+
+  .tab-btn{
+    font-family:var(--mono); font-size:12px; font-weight:600; letter-spacing:.03em;
+    border:1px solid var(--line); background:var(--surface); color:var(--ink-soft);
+    padding:8px 16px; border-radius:7px; transition:all .25s ease;
+  }
+  .tab-btn.active{ border-color:var(--ink); color:var(--ink); background:var(--surface); box-shadow: inset 0 -2px 0 var(--accent); }
+
+  .prompt-row{ display:flex; gap:8px; align-items:center; justify-content:center; flex-wrap:wrap; }
+  .prompt-row input{
+    font-family:var(--mono); font-weight:500; font-size:14px;
+    padding:10px 14px; border:1.5px solid var(--ink); border-radius:7px;
+    outline:none; width:min(380px,60vw); background:#fff; color:var(--ink);
+  }
+  .prompt-row input:focus{ box-shadow:0 0 0 3px rgba(52,82,225,0.18); border-color:var(--accent); }
+  .step-caption{
+    text-align:center; font-weight:500; min-height:20px; color:var(--ink-soft);
+    font-size: clamp(12.5px,1.3vw,14.5px); line-height:1.55; max-width:820px;
+  }
+  .step-caption b{ color:var(--ink); font-weight:700; }
+  .step-caption .mono-inline{ font-family:var(--mono); font-size:.92em; color:var(--accent); }
+
+  footer.credit{ display:none; }
+
+  /* ---------- nav ---------- */
+  .deck-nav{
+    flex:0 0 auto;
+    display:flex; align-items:center; justify-content:center; gap:14px;
+    padding: 6px 0 14px;
+  }
+  .nav-arrow{
+    width:32px; height:32px; border-radius:7px;
+    background:var(--surface); border:1.5px solid var(--ink);
+    font-size:15px; font-weight:700; color:var(--ink);
+    display:flex; align-items:center; justify-content:center;
+    transition: background .2s ease;
+  }
+  .nav-arrow:hover{ background:var(--accent-soft); }
+  .nav-arrow:disabled{ opacity:.3; }
+  .track{ display:flex; gap:6px; align-items:center; }
+  .seg{
+    width:26px; height:4px; border-radius:2px;
+    background:var(--line-strong); cursor:pointer; transition: background .25s ease, width .25s ease;
+  }
+  .seg.active{ background:var(--accent); width:38px; }
+
+  @media (max-width:640px){
+    .topbar{ padding-top:10px; }
+    .brand-text{ font-size:15px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="deck-wrap">
+
+  <div class="topbar">
+    <div class="brand">
+      <div class="brand-mark">AI</div>
+      <div class="brand-text">forklart enkelt</div>
+      <div class="brand-sub">// IM Akademiet</div>
+    </div>
+    <div class="slide-title-mini" id="slideMini">01 / 06 — Hvorfor nå?</div>
+    <a href="del2.html" class="mono" style="font-size:11px; color:var(--ink-soft); text-decoration:none; border:1px solid var(--line); padding:4px 10px; border-radius:6px; margin-left:10px;">Del 2 →</a>
+  </div>
+
+  <div class="deck" id="deck">
+
+    <!-- ============ SLIDE 1 — SOFTWARE IS EATING THE WORLD ============ -->
+    <section class="slide" id="slide-software">
+      <div class="slide-inner">
+        <div class="eyebrow">Et sivilisasjonsskifte</div>
+        <h1 class="slide-h">Software spiste verden.</h1>
+        <p class="slide-sub">Ett sitat fra 2011 forklarer hvorfor programvare ble noe helt annet enn før.</p>
+
+        <div class="panel" style="width:100%; min-height:270px;">
+          <div id="softwareBody"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ SLIDE 2 — TIME TO A MILLION USERS ============ -->
+    <section class="slide" id="slide-growth">
+      <div class="slide-inner">
+        <div class="eyebrow">Bevis i tall</div>
+        <h1 class="slide-h">Tid til én million brukere</h1>
+        <p class="slide-sub">Klikk på én og én app. Gjett før du klikker: hvor lang tid tror du det tok?</p>
+
+        <div class="btn-row">
+          <button class="btn ghost" id="growthResetBtn" style="border:1.5px solid var(--ink);">↺ Nullstill</button>
+        </div>
+
+        <div class="panel" style="width:100%;">
+          <svg id="growthSvg" class="illo" viewBox="0 0 900 300"></svg>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ SLIDE 3 — AI IS EATING SOFTWARE ============ -->
+    <section class="slide" id="slide-ai-eats">
+      <div class="slide-inner">
+        <div class="eyebrow">Seks år senere</div>
+        <h1 class="slide-h">Nå spiser KI software.</h1>
+        <p class="slide-sub">Samme setning, snudd på hodet av en annen bransjeleder — og alt endret seg igjen.</p>
+
+        <div class="panel" style="width:100%; min-height:270px;">
+          <div id="aiEatsBody"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ SLIDE 4 — HJERNE OG HENDER ============ -->
+    <section class="slide" id="slide-brain-hands">
+      <div class="slide-inner">
+        <div class="eyebrow">Derfor er dette annerledes</div>
+        <h1 class="slide-h">Hjerne og hender — samtidig</h1>
+        <p class="slide-sub">Tidligere teknologi erstattet én av delene. KI begynner å røre begge på én gang.</p>
+
+        <div class="panel" style="width:100%; min-height:270px;">
+          <div id="brainHandsBody"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ SLIDE 2b — AI VS. MENNESKELIG INTELLIGENS ============ -->
+    <section class="slide" id="slide-bench">
+      <div class="slide-inner">
+        <div class="eyebrow">Bevis i tall · KI-versjonen</div>
+        <h1 class="slide-h">Kappløpet mot menneskelig intelligens</h1>
+        <p class="slide-sub">Klikk på én og én test. Har KI-en tatt igjen ekspertene ennå — eller henger den fortsatt etter?</p>
+
+        <div class="btn-row">
+          <button class="btn ghost" id="benchResetBtn" style="border:1.5px solid var(--ink);">↺ Nullstill</button>
+        </div>
+
+        <div class="panel" style="width:100%;">
+          <svg id="benchSvg" class="illo" viewBox="0 0 900 570"></svg>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ SLIDE 3 — HVORDAN KI-EN LESER, HUSKER OG GJETTER ============ -->
+    <section class="slide" id="slide-1">
+      <div class="slide-inner">
+        <div class="eyebrow">Under panseret</div>
+        <h1 class="slide-h">Hvordan leser, husker og gjetter KI-en?</h1>
+        <p class="slide-sub">Én sammenhengende reise: <span class="mono" style="color:var(--accent);">tokens → embeddings → vektorrom → indeksering → prediksjon</span>. Skriv en ufullstendig setning og se den fullføres.</p>
+
+        <div class="prompt-row">
+          <input id="tkInput" type="text" maxlength="42" value="Katten sitter på">
+          <button class="btn accent" id="tkBtn">Analyser →</button>
+        </div>
+
+        <div class="panel" style="width:100%;">
+          <svg id="tkSvg" class="illo" viewBox="0 0 900 340"></svg>
+          <div class="step-caption" id="tkCaption">Trykk «Analyser» for å starte.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ SLIDE 4 — HVA SKJER I CHAT ============ -->
+    <section class="slide" id="slide-3">
+      <div class="slide-inner">
+        <div class="eyebrow">Systemarkitektur</div>
+        <h1 class="slide-h">Hva skjer når du trykker Enter i en chat?</h1>
+        <p class="slide-sub">Meldingen din reiser aldri alene — den har med seg mer bagasje enn du tror, og plassen er ikke ubegrenset.</p>
+
+        <div class="prompt-row">
+          <input id="chatInput" type="text" maxlength="46" value="Hva er hovedstaden i Norge?">
+          <button class="btn accent" id="chatSendBtn">Send →</button>
+        </div>
+
+        <div class="panel" style="width:100%;">
+          <svg id="chatSvg" class="illo" viewBox="0 0 900 340"></svg>
+          <div class="step-caption" id="chatCaption">Skriv en melding og trykk send.</div>
+        </div>
+      </div>
+    </section>
+
+
+    <!-- ============ SLIDE 4b — CONTEXT ENGINEERING ============ -->
+    <section class="slide" id="slide-context">
+      <div class="slide-inner">
+        <div class="eyebrow">Fagbegrep · Context engineering</div>
+        <h1 class="slide-h">Konteksten er alt en KI vet — akkurat nå</h1>
+        <p class="slide-sub">Ikke alt en KI «vet» kommer fra samme sted. Fire ulike kilder avgjør hva den faktisk ser idet den svarer deg.</p>
+
+        <div class="btn-row">
+          <button class="btn accent" id="ctxBtn">Vis meg →</button>
+        </div>
+
+        <div class="panel" style="width:100%; min-height:290px;">
+          <div id="ctxBody"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ SLIDE 4b2 — TRENING, KONTEKST OG TOKENS HENGER SAMMEN ============ -->
+    <section class="slide" id="slide-link">
+      <div class="slide-inner">
+        <div class="eyebrow">Sammenhengen forklart</div>
+        <h1 class="slide-h">Hvor kommer tallene fra — og hvor blir historikken av?</h1>
+        <p class="slide-sub">To ting mange lurer på, forklart i sammenheng: treningsdata, kontekst, tokens og vektorer.</p>
+
+        <div class="btn-row">
+          <button class="btn accent" id="linkBtn">Vis meg →</button>
+        </div>
+
+        <div class="panel" style="width:100%; min-height:290px;">
+          <div id="linkBody"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ SLIDE 3b — ULIKE MODELLER, ULIKE STYRKER ============ -->
+    <section class="slide" id="slide-modalities">
+      <div class="slide-inner">
+        <div class="eyebrow">Modell-landskapet</div>
+        <h1 class="slide-h">Alle modeller kan ikke være best på alt</h1>
+        <p class="slide-sub">Multimodalitet, koding, bilder, video — fire helt ulike disipliner, fire ulike ledere.</p>
+
+        <div class="btn-row">
+          <button class="btn accent" id="modBtn">Vis meg →</button>
+        </div>
+
+        <div class="panel" style="width:100%; min-height:290px;">
+          <div id="modBody"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ SLIDE 3c — OPPSUMMERING DEL 1 + LEGO-ØVELSE ============ -->
+    <section class="slide" id="slide-recap1">
+      <div class="slide-inner">
+        <div class="eyebrow">Kapittelavslutning</div>
+        <h1 class="slide-h">KI enkelt forklart — Del 1</h1>
+        <p class="slide-sub">IM Akademiet &middot; en rask oppsummering, og en praktisk øvelse før vi går videre.</p>
+
+        <div class="btn-row">
+          <button class="btn accent" id="recap1Btn">Vis meg →</button>
+        </div>
+
+        <div class="panel" style="width:100%; min-height:290px;">
+          <div id="recap1Body"></div>
+        </div>
+      </div>
+    </section>
+
+  </div>
+
+  <nav class="deck-nav">
+    <button class="nav-arrow" id="prevBtn">‹</button>
+    <div class="track" id="track"></div>
+    <button class="nav-arrow" id="nextBtn">›</button>
+  </nav>
+</div>
+
+<script>
+/* =========================================================
+   DECK NAVIGATION
+   ========================================================= */
+const SLIDE_TITLES = ["Software spiste verden", "Tid til 1 million", "KI spiser software", "Hjerne og hender", "KI vs. mennesker", "Fra tekst til gjetning", "Hva skjer i chat", "Context engineering", "Trening, kontekst & tokens", "Ulike modeller, ulike styrker", "Del 1 — oppsummering"];
+let current = 0;
+const total = SLIDE_TITLES.length;
+const deck = document.getElementById('deck');
+const trackWrap = document.getElementById('track');
+const prevBtn = document.getElementById('prevBtn');
+const nextBtn = document.getElementById('nextBtn');
+const slideMini = document.getElementById('slideMini');
+
+function buildTrack(){
+  trackWrap.innerHTML = '';
+  for(let i=0;i<total;i++){
+    const d = document.createElement('div');
+    d.className = 'seg' + (i===0?' active':'');
+    d.addEventListener('click', ()=>goTo(i));
+    trackWrap.appendChild(d);
+  }
+}
+buildTrack();
+
+function pad(n){ return String(n+1).padStart(2,'0'); }
+
+function goTo(i){
+  current = Math.max(0, Math.min(total-1, i));
+  deck.style.transform = `translateX(-${current*100}vw)`;
+  [...trackWrap.children].forEach((d,idx)=>d.classList.toggle('active', idx===current));
+  prevBtn.disabled = current===0;
+  nextBtn.disabled = current===total-1;
+  slideMini.innerHTML = `${pad(current)} / ${pad(total-1)} — <b>${SLIDE_TITLES[current]}</b>`;
+  revealActiveSlide();
+}
+prevBtn.addEventListener('click', ()=>goTo(current-1));
+nextBtn.addEventListener('click', ()=>goTo(current+1));
+window.addEventListener('keydown', e=>{
+  if(e.key==='ArrowRight') goTo(current+1);
+  if(e.key==='ArrowLeft') goTo(current-1);
+});
+let touchX=null;
+document.addEventListener('touchstart', e=>touchX=e.touches[0].clientX);
+document.addEventListener('touchend', e=>{
+  if(touchX===null) return;
+  const dx = e.changedTouches[0].clientX - touchX;
+  if(dx>60) goTo(current-1);
+  if(dx<-60) goTo(current+1);
+  touchX=null;
+});
+function revealActiveSlide(){}
+
+
+/* =========================================================
+   SHARED HELPERS
+   ========================================================= */
+const PAL = {
+  ink:'#14171C', inkSoft:'#585F68', inkFaint:'#9BA0A6', line:'#DCDFD9', lineStrong:'#C4C9C2',
+  accent:'#3452E1', accentSoft:'#E7EBFC', accentDeep:'#212F9E',
+  live:'#7FCB3F', liveDeep:'#4C8C1E', warn:'#E8465F', warnSoft:'#FDE8EC',
+  amber:'#DB9A22', amberSoft:'#FBF0DB', surface:'#FFFFFF', surface2:'#F8F7F3'
+};
+function svgEl(tag, attrs={}){
+  const el = document.createElementNS('http://www.w3.org/2000/svg', tag);
+  for(const k in attrs) el.setAttribute(k, attrs[k]);
+  return el;
+}
+function clearSvg(svgElNode){ while(svgElNode.firstChild) svgElNode.removeChild(svgElNode.firstChild); }
+/* requestAnimationFrame is suspended while the tab/pane is not visible (rendering paused).
+   setTimeout keeps firing regardless, so every animation loop in this deck drives off `raf`
+   (a ~60fps setTimeout) rather than the real rAF, to keep timelines correct even when hidden. */
+function raf(fn){ return setTimeout(()=>fn(performance.now()), 16); }
+function animateNumber(el, from, to, duration, fmt){
+  const t0 = performance.now();
+  fmt = fmt || (v=>Math.round(v).toString());
+  function step(t){
+    const p = Math.min(1, (t-t0)/duration);
+    const eased = 1 - Math.pow(1-p, 3);
+    el.textContent = fmt(from + (to-from)*eased);
+    if(p<1) raf(step);
+  }
+  raf(step);
+}
+
+
+function fadeIn(container, delayStart, gap){
+  raf(()=>{
+    [...container.querySelectorAll('.fade-item')].forEach((c,i)=> setTimeout(()=>c.classList.add('show'), delayStart+i*gap));
+  });
+}
+
+
+/* =========================================================
+   SLIDE 1 — SOFTWARE IS EATING THE WORLD (static, visible on arrival)
+   ========================================================= */
+
+const softwareBody = document.getElementById('softwareBody');
+softwareBody.innerHTML = `
+    <div class="tag" style="margin-bottom:12px;">2011 &middot; MARC ANDREESSEN, MEDGRUNNLEGGER ANDREESSEN HOROWITZ</div>
+    <div class="fade-item" style="font-family:var(--serif); font-style:italic; font-weight:500; font-size:clamp(18px,2.4vw,25px); line-height:1.35; margin-bottom:16px;">&laquo;Software is eating the world.&raquo;</div>
+    <div class="fade-item" style="display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-bottom:14px;">
+      ${[['Bokhandel','Amazon'],['Videobutikk','Netflix'],['Drosjesentral','Uber'],['Platebutikk','Spotify']].map(([a,b])=>`
+        <div style="background:var(--surface-2); border:1px solid var(--line); border-radius:8px; padding:10px 12px; text-align:center;">
+          <div style="font-size:12px; color:var(--ink-faint); text-decoration:line-through;">${a}</div>
+          <div style="font-family:var(--mono); font-weight:700; font-size:12.5px; color:var(--accent); margin-top:4px;">${b}</div>
+        </div>`).join('')}
+    </div>
+    <p class="fade-item" style="font-size:13px; color:var(--ink-soft); line-height:1.6; margin:0;">På et tiår omformet programvare bransje etter bransje. Men <b>å bygge det</b> krevde programmeringsspråk, utviklerteam og penger — et verktøy forbeholdt <b>teknologene</b>.</p>
+`;
+fadeIn(softwareBody, 200, 150);
+
+
+/* =========================================================
+   SLIDE 2 — TIME TO A MILLION USERS (click one app at a time)
+   ========================================================= */
+const growthSvg = document.getElementById('growthSvg');
+const growthResetBtn = document.getElementById('growthResetBtn');
+const GROWTH = [
+  {label:'Netflix', days:1795, display:'4 år, 11 mnd', tag:'1999 →', color:PAL.inkFaint},
+  {label:'Twitter', days:730, display:'2 år', tag:'2006 →', color:PAL.inkFaint},
+  {label:'Snapchat', days:365, display:'1 år', tag:'2011 →', color:PAL.amber},
+  {label:'Instagram', days:76, display:'2,5 mnd', tag:'2010 →', color:PAL.accent},
+  {label:'ChatGPT', days:5, display:'5 dager', tag:'2022 →', color:PAL.live},
+  {label:'Threads', days:0.04, display:'1 time', tag:'2023 →', color:PAL.warn}
+];
+const gLaneX0 = 230, gLaneX1 = 820, gLaneTop = 40, gLaneGap = 40;
+const gMaxDays = Math.max(...GROWTH.map(r=>r.days));
+let gRevealed = [];
+
+function buildGrowth(){
+  clearSvg(growthSvg);
+  gRevealed = GROWTH.map(()=>false);
+  const wrap = document.getElementById('growthCallout');
+  if(wrap) wrap.remove();
+
+  growthSvg.appendChild(svgEl('line',{x1:gLaneX0,y1:16,x2:gLaneX0,y2:gLaneTop+gLaneGap*GROWTH.length+6,stroke:PAL.line,'stroke-width':1}));
+  for(let g=0; g<=4; g++){
+    const gx = gLaneX0 + (gLaneX1-gLaneX0)*g/4;
+    growthSvg.appendChild(svgEl('line',{x1:gx,y1:16,x2:gx,y2:gLaneTop+gLaneGap*GROWTH.length+6,stroke:PAL.line,'stroke-width':1,'stroke-dasharray':'2 5'}));
+  }
+  const finishTxt = svgEl('text',{x:gLaneX1, y:12, 'text-anchor':'end','font-family':'JetBrains Mono','font-size':10.5,fill:PAL.ink,'font-weight':700});
+  finishTxt.textContent = 'MÅL → 1 MILLION BRUKERE';
+  growthSvg.appendChild(finishTxt);
+  growthSvg.appendChild(svgEl('line',{x1:gLaneX1,y1:16,x2:gLaneX1,y2:gLaneTop+gLaneGap*GROWTH.length+6,stroke:PAL.ink,'stroke-width':1.5}));
+
+  GROWTH.forEach((r,i)=>{
+    const y = gLaneTop + i*gLaneGap;
+    growthSvg.appendChild(svgEl('line',{x1:gLaneX0,y1:y,x2:gLaneX1,y2:y,stroke:PAL.line,'stroke-width':1.5}));
+    const label = svgEl('text',{x:gLaneX0-12,y:y+4,'text-anchor':'end','font-family':'Inter','font-weight':700,'font-size':12.5,fill:PAL.ink});
+    label.textContent = r.label;
+    growthSvg.appendChild(label);
+    const tagTxt = svgEl('text',{x:gLaneX0-12,y:y+17,'text-anchor':'end','font-family':'JetBrains Mono','font-size':9,fill:PAL.inkFaint});
+    tagTxt.textContent = r.tag;
+    growthSvg.appendChild(tagTxt);
+
+    const markerG = svgEl('g',{id:'gMarkerG'+i, transform:'translate(0,0)'});
+    markerG.appendChild(svgEl('circle',{id:'gMarker'+i, cx:gLaneX0, cy:y, r:6.5, fill:PAL.surface2, stroke:PAL.lineStrong,'stroke-width':1.4,'stroke-dasharray':'2 2'}));
+    const readout = svgEl('text',{id:'gReadout'+i, x:gLaneX0+13, y:y-10,'font-family':'JetBrains Mono','font-weight':700,'font-size':11.5, fill:PAL.inkFaint});
+    readout.textContent = '';
+    markerG.appendChild(readout);
+    growthSvg.appendChild(markerG);
+
+    const guessX = gLaneX0 + (gLaneX1-gLaneX0)*0.5;
+    const guessTag = svgEl('g',{id:'gGuess'+i, transform:`translate(${guessX},${y})`, style:'cursor:pointer'});
+    guessTag.appendChild(svgEl('circle',{cx:0,cy:0,r:11,fill:'#fff',stroke:PAL.ink,'stroke-width':1.4,'stroke-dasharray':'3 3'}));
+    const qm = svgEl('text',{x:0,y:4,'text-anchor':'middle','font-family':'JetBrains Mono','font-weight':700,'font-size':13, fill:PAL.ink});
+    qm.textContent = '?';
+    guessTag.appendChild(qm);
+    growthSvg.appendChild(guessTag);
+
+    const hit = svgEl('rect',{x:gLaneX0-146, y:y-18, width:(gLaneX1-gLaneX0)+166, height:36, fill:'transparent'});
+    hit.style.cursor = 'pointer';
+    hit.addEventListener('click', ()=>revealLane(i));
+    growthSvg.appendChild(hit);
+  });
+}
+buildGrowth();
+
+function revealLane(i){
+  if(gRevealed[i]) return;
+  gRevealed[i] = true;
+  const r = GROWTH[i];
+  const guessTag = document.getElementById('gGuess'+i);
+  if(guessTag) guessTag.remove();
+  const marker = document.getElementById('gMarker'+i);
+  const markerG = document.getElementById('gMarkerG'+i);
+  const readout = document.getElementById('gReadout'+i);
+  const duration = (r.days/gMaxDays) * 4500 + 1300;
+  const dist = gLaneX1 - gLaneX0;
+  setTimeout(()=>{
+    marker.setAttribute('fill', r.color);
+    marker.setAttribute('stroke', PAL.ink);
+    marker.setAttribute('stroke-dasharray', '0');
+    markerG.style.transition = `transform ${duration}ms cubic-bezier(.3,.15,.15,1)`;
+    raf(()=>{ markerG.setAttribute('transform', `translate(${dist},0)`); });
+    setTimeout(()=>{
+      readout.textContent = r.display;
+      readout.setAttribute('fill', r.color);
+      if(gRevealed.every(Boolean)) revealGrowthCallout();
+    }, duration*0.94);
+  }, 350);
+}
+
+growthResetBtn.addEventListener('click', buildGrowth);
+
+const GROWTH_CALLOUT = [
+  {tag:'TIKTOK · 100 MILL. BRUKERE', title:'9 måneder', body:'Raskere enn noen annen app — helt til KI-bølgen kom.'},
+  {tag:'CHATGPT · 100 MILL. BRUKERE', title:'2 måneder', body:'Samme milepæl som TikTok, på under en tredjedel av tiden.'},
+  {tag:'HVORFOR', title:'Kode skalerer globalt', body:'Et program skrevet én gang kan kjøres av millioner samtidig — uten fabrikker, uten frakt, uten fysiske grenser. Derfor sprer programvare seg raskere enn noe annet før den.'}
+];
+function revealGrowthCallout(){
+  let wrap = document.getElementById('growthCallout');
+  if(wrap){ wrap.remove(); }
+  wrap = document.createElement('div');
+  wrap.id = 'growthCallout';
+  wrap.style.cssText = 'width:100%; display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-top:2px;';
+  GROWTH_CALLOUT.forEach(r=>{
+    const card = document.createElement('div');
+    card.className = 'fade-item';
+    card.style.cssText = 'background:var(--surface); border:1px solid var(--line); border-left:3px solid var(--accent); border-radius:8px; padding:12px 14px;';
+    card.innerHTML = `<div class="tag ghost" style="margin-bottom:8px;">${r.tag}</div>
+      <div style="font-family:var(--serif); font-weight:600; font-size:14.5px; margin-bottom:4px; line-height:1.25;">${r.title}</div>
+      <div style="font-size:12px; color:var(--ink-soft); line-height:1.45;">${r.body}</div>`;
+    wrap.appendChild(card);
+  });
+  document.querySelector('#slide-growth .slide-inner').appendChild(wrap);
+  fadeIn(wrap, 100, 160);
+}
+
+
+/* =========================================================
+   SLIDE 3 — AI IS EATING SOFTWARE (static, visible on arrival)
+   ========================================================= */
+const aiEatsBody = document.getElementById('aiEatsBody');
+aiEatsBody.innerHTML = `
+    <div class="tag warn" style="margin-bottom:12px;">2017 &middot; JENSEN HUANG, ADM. DIR. I NVIDIA</div>
+    <div class="fade-item" style="font-family:var(--serif); font-style:italic; font-weight:500; font-size:clamp(17px,2.2vw,23px); line-height:1.35; margin-bottom:16px;">&laquo;Software is eating the world, but AI is going to eat software.&raquo;</div>
+    <div class="fade-item" style="display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:14px;">
+      <div style="border:1px solid var(--line); border-radius:8px; padding:12px 14px;">
+        <div class="mono" style="font-size:10.5px; color:var(--ink-faint); margin-bottom:6px;">FØR — Å BYGGE NOE KREVDE</div>
+        <div style="font-size:13px; line-height:1.7;">Programmeringsspråk<br>Et team av utviklere<br>Uker eller måneder</div>
+      </div>
+      <div style="border:1.5px solid var(--accent); background:var(--accent-soft); border-radius:8px; padding:12px 14px;">
+        <div class="mono" style="font-size:10.5px; color:var(--accent-deep); margin-bottom:6px;">NÅ — DET SAMME KREVER</div>
+        <div style="font-size:13px; line-height:1.7; font-weight:600;">Et spørsmål på vanlig språk<br>Én person<br>Sekunder</div>
+      </div>
+    </div>
+    <p class="fade-item" style="font-size:13px; color:var(--ink-soft); line-height:1.6; margin:0;">Økonomer kaller dette en <b>&laquo;general purpose technology&raquo;</b> — på linje med dampmaskinen og elektrisiteten: en teknologi generell nok til å endre alle bransjer samtidig. Forskjellen denne gangen: verktøyet krever ikke lenger spesialistkompetanse. Det som var forbeholdt teknologene, kan nå <b>hvem som helst</b> bruke.</p>
+`;
+fadeIn(aiEatsBody, 200, 150);
+
+
+/* =========================================================
+   SLIDE 4 — HJERNE OG HENDER (static, visible on arrival)
+   ========================================================= */
+const brainHandsBody = document.getElementById('brainHandsBody');
+brainHandsBody.innerHTML = `
+    <div class="fade-item" style="display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:14px;">
+      <div style="border:1px solid var(--line); border-radius:8px; padding:14px 16px;">
+        <div style="font-family:var(--serif); font-weight:600; font-size:16px; margin-bottom:6px;">🧠 Hjerne — kompetanse</div>
+        <div style="font-size:12.5px; color:var(--ink-soft); line-height:1.55;">KI skriver, analyserer, koder, oversetter og svarer — kognitivt arbeid som tidligere krevde år med utdanning.</div>
+        <svg viewBox="0 0 260 100" style="width:100%; height:auto; display:block; margin-top:10px;">
+          <rect x="1" y="1" width="258" height="98" rx="8" fill="#1E1F2B" stroke="#14171C" stroke-width="1.4"/>
+          <rect x="1" y="1" width="258" height="18" rx="8" fill="#14171C"/>
+          <circle cx="13" cy="10" r="2.6" fill="#E8465F"/>
+          <circle cx="22" cy="10" r="2.6" fill="#DB9A22"/>
+          <circle cx="31" cy="10" r="2.6" fill="#7FCB3F"/>
+          <text x="130" y="13" text-anchor="middle" font-family="JetBrains Mono" font-size="7.5" fill="#9BA0A6">claude code &mdash; checkout.ts</text>
+          <text x="10" y="34" font-family="JetBrains Mono" font-size="8.5" fill="#7FCB3F">&gt; claude "legg til rabattkode"</text>
+          <text x="10" y="48" font-family="JetBrains Mono" font-size="7.5" fill="#8A93A6">// oppdaterer handlekurv-komponenten</text>
+          <text x="10" y="61" font-family="JetBrains Mono" font-size="8"><tspan fill="#9C8CFF">function</tspan><tspan fill="#E7EBFC"> applyDiscount</tspan><tspan fill="#9BA0A6">(code) {</tspan></text>
+          <text x="22" y="74" font-family="JetBrains Mono" font-size="8"><tspan fill="#9C8CFF">return</tspan><tspan fill="#9BA0A6"> cart.total * </tspan><tspan fill="#7FCB3F">0.9</tspan><tspan fill="#9BA0A6">;</tspan></text>
+          <text x="10" y="87" font-family="JetBrains Mono" font-size="8" fill="#9BA0A6">}</text>
+        </svg>
+        <div class="mono" style="font-size:9.5px; color:var(--ink-faint); margin-top:6px; text-align:center;">EKSEMPEL: CLAUDE CODE — skriver og redigerer ekte kode</div>
+      </div>
+      <div style="border:1px solid var(--line); border-radius:8px; padding:14px 16px;">
+        <div style="font-family:var(--serif); font-weight:600; font-size:16px; margin-bottom:6px;">🦾 Hender — arbeidskraft</div>
+        <div style="font-size:12.5px; color:var(--ink-soft); line-height:1.55;">Humanoide roboter utstyrt med KI begynner å utføre fysisk arbeid — i lager, produksjon og transport.</div>
+        <svg viewBox="0 0 260 100" style="width:100%; height:auto; display:block; margin-top:10px;">
+          <rect x="1" y="1" width="258" height="98" rx="8" fill="#fff" stroke="#DCDFD9" stroke-width="1.4"/>
+          <line x1="20" y1="86" x2="240" y2="86" stroke="#DCDFD9" stroke-width="1.4"/>
+          <circle cx="96" cy="24" r="9" fill="#14171C"/>
+          <rect x="90" y="21" width="12" height="3" rx="1.5" fill="#3452E1"/>
+          <rect x="84" y="33" width="24" height="30" rx="9" fill="#14171C"/>
+          <circle cx="96" cy="43" r="2" fill="#3452E1"/>
+          <line x1="86" y1="37" x2="78" y2="60" stroke="#14171C" stroke-width="6" stroke-linecap="round"/>
+          <line x1="106" y1="39" x2="134" y2="49" stroke="#14171C" stroke-width="6" stroke-linecap="round"/>
+          <line x1="134" y1="49" x2="154" y2="45" stroke="#14171C" stroke-width="6" stroke-linecap="round"/>
+          <line x1="90" y1="62" x2="86" y2="86" stroke="#14171C" stroke-width="7" stroke-linecap="round"/>
+          <line x1="102" y1="62" x2="108" y2="86" stroke="#14171C" stroke-width="7" stroke-linecap="round"/>
+          <rect x="160" y="28" width="60" height="46" rx="6" fill="#E7EBFC" stroke="#3452E1" stroke-width="1.4"/>
+          <circle cx="190" cy="51" r="8" fill="none" stroke="#3452E1" stroke-width="1.2"/>
+        </svg>
+        <div class="mono" style="font-size:9.5px; color:var(--ink-faint); margin-top:6px; text-align:center;">EKSEMPEL: FIGURE 02 — humanoid robot hos BMW (Spartanburg)</div>
+      </div>
+    </div>
+    <p class="fade-item" style="font-size:13.5px; line-height:1.6; margin:0;">Tidligere teknologibølger erstattet <b>én</b> av delene: maskiner erstattet muskler, software effektiviserte kontorarbeid. <b>KI er den første teknologien som begynner å erstatte begge samtidig</b> — og rører dermed ved selve knapphetsfaktoren i økonomien: menneskelig arbeidskraft.</p>
+`;
+fadeIn(brainHandsBody, 200, 150);
+
+
+/* =========================================================
+   SLIDE 2b — AI VS. HUMAN BENCHMARKS (click one test at a time)
+   ========================================================= */
+const benchSvg = document.getElementById('benchSvg');
+const benchResetBtn = document.getElementById('benchResetBtn');
+const BENCH_RAW = [
+  {
+    name:'GPQA Diamond', sub:'Doktorgrads-nivå naturfag',
+    baseline:70, baselineLabel:'PhD-ekspert: 70 %',
+    points:[
+      {t:2023.9, year:'nov 2023', who:'GPT-4', pct:39},
+      {t:2024.7, year:'2024', who:'o1', pct:77},
+      {t:2025.5, year:'2025', who:'Aristotle', pct:92},
+      {t:2026.1, year:'2026', who:'Gemini 3.1 Pro', pct:94}
+    ],
+    verdict:'✅ Passerte menneskelig ekspertnivå i 2024 — og fortsatte oppover.', verdictColor:PAL.live
+  },
+  {
+    name:'Humanity’s Last Exam', sub:'Ekspertspørsmål på tvers av alle fagfelt',
+    baseline:90, baselineLabel:'Fagekspert (eget felt): ~90 %',
+    points:[
+      {t:2025.0, year:'jan 2025', who:'o1', pct:8},
+      {t:2025.6, year:'aug 2025', who:'Grok-4 Heavy', pct:44},
+      {t:2026.7, year:'sep 2026', who:'Claude Fable 5.1', pct:65}
+    ],
+    verdict:'⏳ Fra 8 % til 65 % på 20 måneder — men ikke forbi ekspertene ennå.', verdictColor:PAL.amber
+  },
+  {
+    name:'SWE-bench Verified', sub:'Ekte feilrettinger hentet fra GitHub · lansert aug. 2024',
+    baseline:null, baselineLabel:null,
+    points:[
+      {t:2024.6, year:'aug 2024', who:'Claude 3.5 Sonnet', pct:33},
+      {t:2025.8, year:'2025', who:'Claude 4.5 / Gemini 3', pct:74},
+      {t:2026.6, year:'2026', who:'Claude Opus 5', pct:85}
+    ],
+    verdict:'📈 Fra 33 % ved lansering til 85 % på litt over to år.', verdictColor:PAL.accent
+  }
+];
+const BENCH = BENCH_RAW.map(b=>{
+  const ts = b.points.map(p=>p.t);
+  return Object.assign({}, b, { tMin: Math.min(...ts)-0.15, tMax: Math.max(...ts)+0.35 });
+});
+const bChartX0 = 116, bChartX1 = 860, bRowH = 178, bRowTop = 26;
+let bRevealed = [];
+let benchGen = 0;
+
+function bScaleX(tMin,tMax){ return t => bChartX0 + (t-tMin)/(tMax-tMin)*(bChartX1-bChartX0); }
+function bsy(pct, cy0, cy1){ return cy1 - (pct/100)*(cy1-cy0); }
+
+function bDot(px,py){
+  return svgEl('circle',{cx:px,cy:py,r:5.5,fill:PAL.accent,stroke:PAL.ink,'stroke-width':1.3});
+}
+function bPointEntry(p){ return `${p.year} · ${p.pct}% · ${p.who}`; }
+
+function buildBench(){
+  clearSvg(benchSvg);
+  benchGen++;
+  bRevealed = BENCH.map(()=>false);
+  const wrap = document.getElementById('benchCallout');
+  if(wrap) wrap.remove();
+
+  BENCH.forEach((b,i)=>{
+    const y0 = bRowTop + i*bRowH;
+    const cy0 = y0+38, cy1 = y0+108;
+    const scaleX = bScaleX(b.tMin,b.tMax);
+
+    const name = svgEl('text',{x:20,y:y0+14,'font-family':'Fraunces','font-weight':600,'font-size':15, fill:PAL.ink});
+    name.textContent = b.name;
+    benchSvg.appendChild(name);
+    const sub = svgEl('text',{x:20,y:y0+30,'font-family':'Inter','font-size':10.5, fill:PAL.inkSoft});
+    sub.textContent = b.sub;
+    benchSvg.appendChild(sub);
+
+    // y-axis (score 0-100)
+    benchSvg.appendChild(svgEl('line',{x1:bChartX0,y1:cy0,x2:bChartX0,y2:cy1,stroke:PAL.line,'stroke-width':1.3}));
+    [0,50,100].forEach(s=>{
+      const yy = bsy(s,cy0,cy1);
+      benchSvg.appendChild(svgEl('line',{x1:bChartX0-4,y1:yy,x2:bChartX0,y2:yy,stroke:PAL.line,'stroke-width':1}));
+      const st = svgEl('text',{x:bChartX0-8,y:yy+3,'text-anchor':'end','font-family':'JetBrains Mono','font-size':8, fill:PAL.inkFaint});
+      st.textContent = s+'%';
+      benchSvg.appendChild(st);
+    });
+    // x-axis — starts exactly where this benchmark's first measurement happened
+    benchSvg.appendChild(svgEl('line',{x1:bChartX0,y1:cy1,x2:bChartX1,y2:cy1,stroke:PAL.line,'stroke-width':1.3}));
+    const tickStart = Math.ceil(b.tMin), tickEnd = Math.floor(b.tMax);
+    const ticks = [];
+    for(let yr=tickStart; yr<=tickEnd; yr++) ticks.push(yr);
+    if(ticks.length<2) ticks.push(tickEnd+1);
+    ticks.forEach(yr=>{
+      const xx = scaleX(yr);
+      benchSvg.appendChild(svgEl('line',{x1:xx,y1:cy1,x2:xx,y2:cy1+4,stroke:PAL.line,'stroke-width':1}));
+      const xt = svgEl('text',{x:xx,y:cy1+15,'text-anchor':'middle','font-family':'JetBrains Mono','font-size':8, fill:PAL.inkFaint});
+      xt.textContent = yr;
+      benchSvg.appendChild(xt);
+    });
+
+    if(b.baseline!=null){
+      const hy = bsy(b.baseline,cy0,cy1);
+      benchSvg.appendChild(svgEl('line',{x1:bChartX0,y1:hy,x2:bChartX1,y2:hy,stroke:PAL.warn,'stroke-width':1.4,'stroke-dasharray':'4 4'}));
+      const hl = svgEl('text',{x:bChartX0+6,y:hy+13,'text-anchor':'start','font-family':'JetBrains Mono','font-weight':700,'font-size':9.5, fill:PAL.warn});
+      hl.textContent = b.baselineLabel;
+      benchSvg.appendChild(hl);
+    }
+
+    // first point visible immediately — right at the start of the axis
+    const p0 = b.points[0];
+    const px0 = scaleX(p0.t), py0 = bsy(p0.pct,cy0,cy1);
+    benchSvg.appendChild(bDot(px0,py0));
+
+    // sequence readout — grows as points are revealed
+    const seq = svgEl('text',{id:'bSeq'+i, x:20, y:y0+140,'font-family':'JetBrains Mono','font-weight':700,'font-size':10.5, fill:PAL.accentDeep});
+    seq.textContent = bPointEntry(p0);
+    benchSvg.appendChild(seq);
+
+    // "?" invitation, top-right corner (clear of the plotted data)
+    const guess = svgEl('g',{id:'bGuess'+i, transform:`translate(${bChartX1-15},${y0+12})`, style:'cursor:pointer'});
+    guess.appendChild(svgEl('circle',{cx:0,cy:0,r:11,fill:'#fff',stroke:PAL.ink,'stroke-width':1.4,'stroke-dasharray':'3 3'}));
+    const qm = svgEl('text',{x:0,y:4,'text-anchor':'middle','font-family':'JetBrains Mono','font-weight':700,'font-size':13, fill:PAL.ink});
+    qm.textContent = '?';
+    guess.appendChild(qm);
+    benchSvg.appendChild(guess);
+
+    const hit = svgEl('rect',{x:0, y:y0, width:900, height:bRowH-4, fill:'transparent'});
+    hit.style.cursor = 'pointer';
+    hit.addEventListener('click', ()=>revealBenchRow(i));
+    benchSvg.appendChild(hit);
+  });
+}
+buildBench();
+
+function revealBenchRow(i){
+  if(bRevealed[i]) return;
+  bRevealed[i] = true;
+  const myGen = benchGen;
+  const b = BENCH[i];
+  const y0 = bRowTop + i*bRowH;
+  const cy0 = y0+38, cy1 = y0+108;
+  const scaleX = bScaleX(b.tMin,b.tMax);
+  const guess = document.getElementById('bGuess'+i);
+  if(guess) guess.remove();
+  const seqEl = document.getElementById('bSeq'+i);
+
+  const rest = b.points.slice(1);
+  rest.forEach((p,jj)=>{
+    const j = jj+1;
+    setTimeout(()=>{
+      if(myGen!==benchGen) return;
+      const px = scaleX(p.t), py = bsy(p.pct,cy0,cy1);
+      const prev = b.points[j-1];
+      const prevPx = scaleX(prev.t), prevPy = bsy(prev.pct,cy0,cy1);
+
+      const line = svgEl('line',{x1:prevPx,y1:prevPy,x2:prevPx,y2:prevPy,stroke:PAL.accent,'stroke-width':2, opacity:0});
+      line.style.transition = 'opacity .3s ease, x2 .55s ease, y2 .55s ease';
+      benchSvg.appendChild(line);
+      raf(()=>{ line.setAttribute('x2', px); line.setAttribute('y2', py); line.setAttribute('opacity','0.55'); });
+
+      const g = bDot(px,py);
+      g.setAttribute('opacity','0');
+      g.style.transition = 'opacity .7s ease';
+      benchSvg.appendChild(g);
+      raf(()=>g.setAttribute('opacity','1'));
+      if(seqEl) seqEl.textContent += `   →   ${bPointEntry(p)}`;
+
+      if(j===b.points.length-1){
+        setTimeout(()=>{
+          if(myGen!==benchGen) return;
+          const vg = svgEl('g',{opacity:0});
+          vg.style.transition='opacity .6s ease';
+          const vt = svgEl('text',{x:20,y:y0+bRowH-14,'font-family':'Inter','font-weight':700,'font-size':11.5, fill:b.verdictColor});
+          vt.textContent = b.verdict;
+          vg.appendChild(vt);
+          benchSvg.appendChild(vg);
+          raf(()=>vg.setAttribute('opacity','1'));
+          if(bRevealed.every(Boolean)) setTimeout(()=>{ if(myGen===benchGen) revealBenchCallout(); }, 700);
+        }, 750);
+      }
+    }, 400 + jj*1100);
+  });
+}
+
+benchResetBtn.addEventListener('click', buildBench);
+
+const BENCH_CALLOUT = [
+  {tag:'HVA BETYR DETTE', title:'Kurven bøyer oppover', body:'Modellene forbedrer seg raskere enn menneskelig kompetanse noen gang har vokst — testene må stadig gjøres vanskeligere.'},
+  {tag:'MEN', title:'Testresultat ≠ hverdagsbruk', body:'Å score høyt på en eksamen er ikke det samme som å håndtere alt en jobb faktisk krever.'}
+];
+function revealBenchCallout(){
+  let wrap = document.getElementById('benchCallout');
+  if(wrap){ wrap.remove(); }
+  wrap = document.createElement('div');
+  wrap.id = 'benchCallout';
+  wrap.style.cssText = 'width:100%; display:grid; grid-template-columns:repeat(2,1fr); gap:12px; margin-top:2px;';
+  BENCH_CALLOUT.forEach(r=>{
+    const card = document.createElement('div');
+    card.className = 'fade-item';
+    card.style.cssText = 'background:var(--surface); border:1px solid var(--line); border-left:3px solid var(--accent); border-radius:8px; padding:12px 14px;';
+    card.innerHTML = `<div class="tag ghost" style="margin-bottom:8px;">${r.tag}</div>
+      <div style="font-family:var(--serif); font-weight:600; font-size:14.5px; margin-bottom:4px; line-height:1.25;">${r.title}</div>
+      <div style="font-size:12px; color:var(--ink-soft); line-height:1.45;">${r.body}</div>`;
+    wrap.appendChild(card);
+  });
+  document.querySelector('#slide-bench .slide-inner').appendChild(wrap);
+  fadeIn(wrap, 100, 160);
+}
+
+
+
+/* =========================================================
+   SLIDE 2 — TOKENS → EMBEDDINGS → VECTOR SPACE
+   ========================================================= */
+const tkSvg = document.getElementById('tkSvg');
+const tkCaption = document.getElementById('tkCaption');
+const tkInput = document.getElementById('tkInput');
+const tkBtn = document.getElementById('tkBtn');
+let tkStep = 0;
+let tkGen = 0;
+
+function seedFromStr(s){ let h=0; for(const c of s) h = (h*31 + c.charCodeAt(0)) >>> 0; return h; }
+function pseudo(seed, i){ const x = Math.sin(seed + i*12.9898)*43758.5453; return (x - Math.floor(x)); } // 0..1
+function pseudoSigned(seed, i){ return pseudo(seed,i)*2-1; } // -1..1
+function tokenId(tok, i){ return 30000 + Math.floor(pseudo(seedFromStr(tok), i)*69999); }
+
+function tokenizeIllustrative(sentence){
+  const words = sentence.trim().split(/\s+/).filter(Boolean);
+  const tokens = [];
+  let splitExample = null;
+  words.forEach(w=>{
+    if(w.length>6){
+      const mid = Math.ceil(w.length*0.55);
+      const a = w.slice(0,mid), b = w.slice(mid);
+      tokens.push(a); tokens.push(b);
+      if(!splitExample) splitExample = `"${w}" → "${a}" + "${b}"`;
+    } else {
+      tokens.push(w);
+    }
+  });
+  tokens.splitExample = splitExample;
+  return tokens.length? tokens : ['…'];
+}
+
+function tkReset(){
+  tkStep = 0;
+  tkGen++;
+  clearSvg(tkSvg);
+  tkCaption.textContent = 'Trykk «Analyser» for å starte.';
+  tkBtn.textContent = 'Analyser →';
+}
+tkReset();
+tkBtn.addEventListener('click', tkAdvance);
+
+function tkAdvance(){
+  tkStep++;
+  tkGen++;
+  if(tkStep>6){ tkReset(); return; }
+  const sentence = tkInput.value || 'Katten sitter på';
+  const tokens = tokenizeIllustrative(sentence);
+  clearSvg(tkSvg);
+
+  if(tkStep===1) drawTkStep1(tokens);
+  if(tkStep===2) drawTkStep2(tokens);
+  if(tkStep===3) drawTkStep3(tokens);
+  if(tkStep===4) drawIndexStep();
+  if(tkStep===5) drawPredictionStep(tokens);
+  if(tkStep===6) drawUncertaintyStep();
+
+  tkBtn.textContent = tkStep===6 ? '↺ Start på nytt' : 'Neste trinn ›';
+}
+
+function panelTag(x,y,text,color){
+  const t = svgEl('text',{x,y,'font-family':'JetBrains Mono','font-size':11,'font-weight':700, fill:color||PAL.ink});
+  t.textContent = text;
+  tkSvg.appendChild(t);
+  return t;
+}
+
+function drawTkStep1(tokens){
+  tkCaption.innerHTML = `<span class="mono-inline">TRINN 01 · TOKENISERING</span> — modellen leser verken bokstaver eller ord. Teksten kuttes i <b>tokens</b> (tekstbiter) og hver av dem slås opp i en fast ordbok som gir den en unik <b>token-ID</b>.`;
+  panelTag(20,26, `${tokens.length} TOKENS`, PAL.accent);
+  panelTag(770,26, 'ORDBOK-STØRRELSE: 100 256', PAL.inkFaint);
+  let x = 40;
+  const y = 110;
+  const myGen = tkGen;
+  tokens.forEach((t,i)=>{
+    const w = Math.max(58, t.length*15+26);
+    const g = svgEl('g',{});
+    g.setAttribute('opacity','0');
+    g.style.transition = 'opacity .6s ease, transform .6s ease';
+    const rect = svgEl('rect',{x,y:y-26,width:w,height:52,rx:8,fill:PAL.accentSoft,stroke:PAL.accent,'stroke-width':1.5});
+    g.appendChild(rect);
+    const txt = svgEl('text',{x:x+w/2,y:y+2,'text-anchor':'middle','font-family':'Inter','font-weight':700,'font-size':14.5, fill:PAL.ink});
+    txt.textContent = t;
+    g.appendChild(txt);
+    const idTxt = svgEl('text',{x:x+w/2,y:y+38,'text-anchor':'middle','font-family':'JetBrains Mono','font-size':10.5, fill:PAL.accentDeep});
+    idTxt.textContent = '#'+tokenId(t.toLowerCase(), i);
+    g.appendChild(idTxt);
+    tkSvg.appendChild(g);
+    setTimeout(()=>{ if(myGen===tkGen) g.setAttribute('opacity','1'); }, i*220);
+    x += w + 14;
+  });
+  // arrow + explainer row
+  const noteY = 210;
+  tkSvg.appendChild(svgEl('line',{x1:40,y1:noteY,x2:860,y2:noteY,stroke:PAL.line,'stroke-width':1}));
+  const note = svgEl('text',{x:40,y:noteY+28,'font-family':'JetBrains Mono','font-size':11, fill:PAL.inkSoft});
+  note.textContent = tokens.splitExample
+    ? `denne setningen: ${tokens.splitExample}  (lange/sjeldne ord splittes i flere deltoken)`
+    : 'prøv et langt ord (f.eks. "programmering") for å se et ord splittes i flere deltoken';
+  tkSvg.appendChild(note);
+}
+
+function drawTkStep2(tokens){
+  const last = tokens[tokens.length-1];
+  const seed = seedFromStr(last.toLowerCase());
+  tkCaption.innerHTML = `<span class="mono-inline">TRINN 02 · EMBEDDING</span> — hver token-ID slås opp i en tabell og blir til en <b>vektor</b>: en lang liste med tall (koordinater) i et flerdimensjonalt rom. Denne modellen bruker <b>1536 dimensjoner</b> for å beskrive betydningen av ett eneste token.`;
+  panelTag(20,26, `TOKEN: "${last}"  →  #${tokenId(last.toLowerCase(),tokens.length-1)}`, PAL.accent);
+
+  const boxX = 60, boxY = 70, boxW = 780, boxH = 90;
+  tkSvg.appendChild(svgEl('rect',{x:boxX,y:boxY,width:boxW,height:boxH,rx:10,fill:'#fff',stroke:PAL.line,'stroke-width':1.5}));
+  const bracketL = svgEl('text',{x:boxX+14,y:boxY+56,'font-family':'JetBrains Mono','font-size':34, fill:PAL.ink}); bracketL.textContent='['; tkSvg.appendChild(bracketL);
+  const bracketR = svgEl('text',{x:boxX+boxW-30,y:boxY+56,'font-family':'JetBrains Mono','font-size':34, fill:PAL.ink}); bracketR.textContent=']'; tkSvg.appendChild(bracketR);
+
+  const N = 9;
+  const slotW = (boxW-90)/N;
+  for(let i=0;i<N;i++){
+    const cx = boxX+50+slotW*i+slotW/2;
+    const label = svgEl('text',{id:'vnum'+i, x:cx, y:boxY+56, 'text-anchor':'middle','font-family':'JetBrains Mono','font-weight':600,'font-size':15, fill: i===N-1? PAL.inkFaint : PAL.accentDeep});
+    label.textContent = i===N-1 ? '…' : '0.00';
+    tkSvg.appendChild(label);
+    const dimTag = svgEl('text',{x:cx,y:boxY+boxH+16,'text-anchor':'middle','font-family':'JetBrains Mono','font-size':9, fill:PAL.inkFaint});
+    dimTag.textContent = i===N-1 ? 'dim 1536' : 'dim '+(i*171+3);
+    tkSvg.appendChild(dimTag);
+  }
+  // decode animation: cycle random digits then settle
+  const finals = [];
+  for(let i=0;i<N-1;i++) finals.push((pseudoSigned(seed,i)*2.4).toFixed(2));
+  let ticks = 0;
+  const myGen = tkGen;
+  const iv = setInterval(()=>{
+    if(myGen!==tkGen){ clearInterval(iv); return; }
+    ticks++;
+    for(let i=0;i<N-1;i++){
+      const el = document.getElementById('vnum'+i);
+      if(!el) continue;
+      if(ticks>=8+i*2){ el.textContent = (finals[i]>0?'+':'')+finals[i]; el.setAttribute('fill', PAL.accentDeep); }
+      else { el.textContent = (Math.random()*4-2).toFixed(2); }
+    }
+    if(ticks>=8+(N-1)*2){ clearInterval(iv); }
+  }, 55);
+
+  const note = svgEl('text',{x:60,y:boxY+boxH+52,'font-family':'Inter','font-size':12, fill:PAL.inkSoft});
+  note.textContent = 'Tallene er ikke tilfeldige for modellen — de er lært under trening, slik at ord med lignende mening får lignende tall.';
+  tkSvg.appendChild(note);
+}
+
+const REF_WORDS = [
+  ['sofa',0.62,0.68],['stol',0.55,0.60],['gulv',0.68,0.46],['bord',0.71,0.58],
+  ['løp',-0.52,0.70],['hoppet',-0.62,0.58],['sov',-0.30,0.44],
+  ['glad',0.08,-0.62],['trist',0.18,-0.74],['redd',0.34,-0.68]
+];
+function drawTkStep3(tokens){
+  tkCaption.innerHTML = `<span class="mono-inline">TRINN 03 · VEKTORROM</span> — i virkeligheten har rommet 1536 dimensjoner; her viser vi bare 2 av dem. Ord med lignende betydning havner nær hverandre — dette kalles <b>semantisk nærhet</b>.`;
+  panelTag(20,22, 'PROJEKSJON: DIM 482 × DIM 1190 (2 av 1536)', PAL.accent);
+
+  const ox = 90, oy = 300, w = 760, h = 250;
+  // axes
+  tkSvg.appendChild(svgEl('line',{x1:ox,y1:oy,x2:ox+w,y2:oy,stroke:PAL.line,'stroke-width':1.5}));
+  tkSvg.appendChild(svgEl('line',{x1:ox,y1:oy,x2:ox,y2:oy-h,stroke:PAL.line,'stroke-width':1.5}));
+  const xlab = svgEl('text',{x:ox+w,y:oy+38,'text-anchor':'end','font-family':'JetBrains Mono','font-size':10.5, fill:PAL.inkFaint}); xlab.textContent='dimensjon 482 →'; tkSvg.appendChild(xlab);
+  const ylab = svgEl('text',{x:ox,y:oy-h-10,'text-anchor':'start','font-family':'JetBrains Mono','font-size':10.5, fill:PAL.inkFaint}); ylab.textContent='dimensjon 1190 ↑'; tkSvg.appendChild(ylab);
+
+  function clamp(v){ return Math.max(-0.86, Math.min(0.86, v)); }
+  function toXY(vx,vy){ return [ox + (clamp(vx)+1)/2*w, oy - (clamp(vy)+1)/2*h]; }
+
+  // reference words (muted)
+  REF_WORDS.forEach(([w2,vx,vy])=>{
+    const [x,y] = toXY(vx,vy);
+    tkSvg.appendChild(svgEl('circle',{cx:x,cy:y,r:5,fill:PAL.surface2,stroke:PAL.lineStrong,'stroke-width':1.3}));
+    const t = svgEl('text',{x:x+9,y:y+4,'font-family':'Inter','font-size':11, fill:PAL.inkFaint});
+    t.textContent = w2;
+    tkSvg.appendChild(t);
+  });
+
+  // current sentence tokens (highlighted)
+  const pts = tokens.map((t,i)=>{
+    const seed = seedFromStr(t.toLowerCase());
+    const vx = pseudoSigned(seed,1), vy = pseudoSigned(seed,2);
+    return {t, vx, vy, xy: toXY(vx,vy)};
+  });
+  const colors = [PAL.accent, PAL.live, PAL.amber, PAL.warn, PAL.accentDeep];
+  const myGen = tkGen;
+  pts.forEach((p,i)=>{
+    const g = svgEl('g',{}); g.setAttribute('opacity','0'); g.style.transition='opacity .6s ease';
+    g.appendChild(svgEl('circle',{cx:p.xy[0],cy:p.xy[1],r:8,fill:colors[i%colors.length],stroke:PAL.ink,'stroke-width':1.5}));
+    const lbl = svgEl('text',{x:p.xy[0],y:p.xy[1]-13,'text-anchor':'middle','font-family':'Inter','font-weight':700,'font-size':12, fill:PAL.ink});
+    lbl.textContent = p.t;
+    g.appendChild(lbl);
+    const coord = svgEl('text',{x:p.xy[0],y:p.xy[1]+22,'text-anchor':'middle','font-family':'JetBrains Mono','font-size':9.5, fill:PAL.inkSoft});
+    coord.textContent = `(${p.vx.toFixed(2)}, ${p.vy.toFixed(2)})`;
+    g.appendChild(coord);
+    tkSvg.appendChild(g);
+    setTimeout(()=>{ if(myGen===tkGen) g.setAttribute('opacity','1'); }, i*200);
+  });
+
+  // similarity line between two closest current tokens (if >=2)
+  if(pts.length>=2){
+    let bestPair=[0,1], bestD=Infinity;
+    for(let i=0;i<pts.length;i++) for(let j=i+1;j<pts.length;j++){
+      const d = Math.hypot(pts[i].vx-pts[j].vx, pts[i].vy-pts[j].vy);
+      if(d<bestD){ bestD=d; bestPair=[i,j]; }
+    }
+    const [a,b] = bestPair;
+    const sim = Math.max(0.35, (1 - bestD/2.2));
+    setTimeout(()=>{
+      if(myGen!==tkGen) return;
+      const dash = svgEl('line',{x1:pts[a].xy[0],y1:pts[a].xy[1],x2:pts[b].xy[0],y2:pts[b].xy[1],stroke:PAL.ink,'stroke-width':1.3,'stroke-dasharray':'4 4', opacity:0});
+      dash.style.transition = 'opacity .6s ease';
+      tkSvg.appendChild(dash);
+      const midx = (pts[a].xy[0]+pts[b].xy[0])/2, midy=(pts[a].xy[1]+pts[b].xy[1])/2;
+      const simTag = svgEl('text',{x:midx,y:midy-6,'text-anchor':'middle','font-family':'JetBrains Mono','font-weight':700,'font-size':11, fill:PAL.ink, opacity:0});
+      simTag.textContent = `cosine similaritet: ${sim.toFixed(2)}`;
+      simTag.style.transition = 'opacity .6s ease';
+      tkSvg.appendChild(simTag);
+      raf(()=>{ dash.setAttribute('opacity','1'); simTag.setAttribute('opacity','1'); });
+    }, pts.length*200+250);
+  }
+}
+
+const NEXT_WORD_TABLE = {
+  'på': [['bordet',24],['sofaen',18],['gulvet',15],['taket',9],['månen',3]],
+  'katten': [['sover',20],['jager',16],['spiser',14],['maler',12],['flyr',2]],
+  'jeg': [['tror',22],['liker',19],['vet',15],['drømmer',8],['flyr',2]],
+  'default': [['ja',28],['nei',19],['kanskje',14],['det',10],['egentlig',4]]
+};
+
+function drawIndexStep(){
+  tkCaption.innerHTML = `<span class="mono-inline">TRINN 04 · INDEKSERING</span> — tekstbiter (dokumenter, meldinger, nettsider) er på forhånd gjort om til vektorer og lagt i en <b>vektorindeks</b>. Når du spør om noe, trenger systemet bare å finne de <b>nærmeste naboene</b> til din vektor — ikke lese alt på nytt.`;
+  const areaX=60, areaY=40, areaW=780, areaH=220;
+  tkSvg.appendChild(svgEl('rect',{x:areaX,y:areaY,width:areaW,height:areaH,rx:10,fill:PAL.surface2,stroke:PAL.line,'stroke-width':1.3}));
+  panelTag(areaX+10, areaY-12, 'VEKTORINDEKS', PAL.inkFaint);
+
+  // scattered index points (deterministic)
+  const pts = [];
+  for(let i=0;i<46;i++){
+    const x = areaX+30 + pseudo(1000+i,1)*(areaW-60);
+    const y = areaY+26 + pseudo(2000+i,2)*(areaH-50);
+    pts.push({x,y});
+  }
+  pts.forEach(p=>{
+    tkSvg.appendChild(svgEl('circle',{cx:p.x,cy:p.y,r:3.4,fill:'#fff',stroke:PAL.lineStrong,'stroke-width':1.2}));
+  });
+
+  const qx = areaX+areaW*0.62, qy = areaY+areaH*0.45;
+  // distances -> nearest 3
+  const withDist = pts.map(p=>({...p, d:Math.hypot(p.x-qx,p.y-qy)})).sort((a,b)=>a.d-b.d);
+  const nearest = withDist.slice(0,3);
+
+  const query = svgEl('circle',{cx:qx,cy:qy,r:8,fill:PAL.accent,stroke:PAL.ink,'stroke-width':1.5});
+  tkSvg.appendChild(query);
+  const qlabel = svgEl('text',{x:qx+14,y:qy-12,'font-family':'JetBrains Mono','font-weight':700,'font-size':11, fill:PAL.accent});
+  qlabel.textContent = 'spørringsvektor (din melding)';
+  tkSvg.appendChild(qlabel);
+
+  // expanding search ring, animated manually via raf (no CSS transition on r)
+  const ring = svgEl('circle',{cx:qx,cy:qy,r:0,fill:'none',stroke:PAL.accent,'stroke-width':1.5,opacity:0.7});
+  tkSvg.appendChild(ring);
+  const t0 = performance.now();
+  const maxR = withDist[2].d + 6;
+  const myGen = tkGen;
+  function stepRing(t){
+    if(myGen!==tkGen) return;
+    const p = Math.min(1,(t-t0)/1900);
+    ring.setAttribute('r', maxR*p);
+    ring.setAttribute('opacity', 0.7*(1-p*0.6));
+    if(p<1) raf(stepRing);
+    else {
+      nearest.forEach((n,i)=>{
+        setTimeout(()=>{
+          if(myGen!==tkGen) return;
+          const hit = svgEl('circle',{cx:n.x,cy:n.y,r:6,fill:PAL.live,stroke:PAL.ink,'stroke-width':1.4});
+          tkSvg.appendChild(hit);
+          const line = svgEl('line',{x1:qx,y1:qy,x2:n.x,y2:n.y,stroke:PAL.liveDeep,'stroke-width':1.2,'stroke-dasharray':'3 4'});
+          tkSvg.insertBefore(line, hit);
+        }, i*180);
+      });
+      const stat = document.getElementById('idxStat');
+      if(stat) animateNumber(stat, 400000, 2438910, 900, v=>Math.round(v).toLocaleString('nb-NO'));
+    }
+  }
+  raf(stepRing);
+
+  const statLabel = svgEl('text',{x:areaX+areaW/2,y:areaY+areaH+34,'text-anchor':'middle','font-family':'JetBrains Mono','font-size':12.5, fill:PAL.ink,'font-weight':600});
+  const statPre = svgEl('tspan',{}); statPre.textContent='søk blant '; statLabel.appendChild(statPre);
+  const statNum = svgEl('tspan',{id:'idxStat', fill:PAL.accent}); statNum.textContent='400 000'; statLabel.appendChild(statNum);
+  const statPost = svgEl('tspan',{}); statPost.textContent=' vektorer → 3 nærmeste treff på 42 ms'; statLabel.appendChild(statPost);
+  tkSvg.appendChild(statLabel);
+}
+
+function drawPredictionStep(tokens){
+  const lastWord = (tokens[tokens.length-1]||'').toLowerCase();
+  const table = NEXT_WORD_TABLE[lastWord] || NEXT_WORD_TABLE['default'];
+  tkCaption.innerHTML = `<span class="mono-inline">TRINN 05 · PREDIKSJON</span> — med relevant informasjon på plass gjetter modellen <b>neste token</b>, ett om gangen, basert på sannsynlighet.`;
+  const barX=180, barW=560, top=50, gap=48;
+  const myGen = tkGen;
+  table.forEach(([word,pct],i)=>{
+    const y = top+i*gap;
+    tkSvg.appendChild(svgEl('rect',{x:barX,y,width:barW,height:28,rx:5,fill:'none',stroke:PAL.line,'stroke-width':1.3}));
+    const bar = svgEl('rect',{x:barX,y,width:0,height:28,rx:5,fill: i===0?PAL.accent:PAL.surface2, stroke: i===0?PAL.accent:PAL.lineStrong,'stroke-width':1.3});
+    tkSvg.appendChild(bar);
+    const t0=performance.now();
+    const target = barW*(pct/30);
+    function step(t){ if(myGen!==tkGen) return; const p=Math.min(1,(t-t0-i*130)/700); if(p<0) { raf(step); return;} const eased=1-Math.pow(1-p,3); bar.setAttribute('width', target*eased); if(p<1) raf(step); }
+    raf(step);
+    const label = svgEl('text',{x:barX+barW+16,y:y+19,'font-family':'JetBrains Mono','font-weight':700,'font-size':13.5, fill: i===0?PAL.ink:PAL.inkSoft});
+    label.textContent = `${word}  ·  ${pct}%`;
+    tkSvg.appendChild(label);
+  });
+  const ctx = svgEl('text',{x:barX,y:top+table.length*gap+20,'font-family':'Inter','font-size':12, fill:PAL.inkSoft});
+  ctx.textContent = `forrige token var "${lastWord}" — modellen rangerer alle ~100 256 mulige neste tokens, og viser her de fem mest sannsynlige.`;
+  tkSvg.appendChild(ctx);
+}
+
+function drawUncertaintyStep(){
+  tkCaption.innerHTML = `<span class="mono-inline">TRINN 06 · USIKKERHET</span> — modellen velger alltid <b>et</b> svar, selv når den er usikker. Høy sannsynlighet er ikke det samme som fasit.`;
+  const bx=100, by=50, bw=700, bh=190;
+  tkSvg.appendChild(svgEl('rect',{x:bx,y:by,width:bw,height:bh,rx:12,fill:PAL.warnSoft,stroke:PAL.warn,'stroke-width':1.6}));
+  tkSvg.appendChild(svgEl('rect',{x:bx,y:by,width:5,height:bh,fill:PAL.warn}));
+  const iconG = svgEl('g',{});
+  iconG.appendChild(svgEl('circle',{cx:bx+46,cy:by+40,r:16,fill:'#fff',stroke:PAL.warn,'stroke-width':1.8}));
+  const iconT = svgEl('text',{x:bx+46,y:by+46,'text-anchor':'middle','font-family':'JetBrains Mono','font-weight':700,'font-size':17, fill:PAL.warn});
+  iconT.textContent='!'; iconG.appendChild(iconT);
+  tkSvg.appendChild(iconG);
+  const heading = svgEl('text',{x:bx+76,y:by+46,'font-family':'Fraunces','font-weight':600,'font-size':18, fill:PAL.ink});
+  heading.textContent='Sannsynlig ≠ sant';
+  tkSvg.appendChild(heading);
+
+  const fo = svgEl('foreignObject',{x:bx+30,y:by+70,width:bw-60,height:bh-90});
+  const div = document.createElement('div');
+  div.style.cssText = 'font-family:Inter; font-size:13px; color:#3b2129; line-height:1.6;';
+  div.innerHTML = 'Modellen kjenner ikke «sannheten» — den kjenner bare hva som statistisk <i>pleier</i> å komme etter. Det betyr at den kan levere feil informasjon med akkurat like stor selvtillit som riktig informasjon. Derfor bør fakta som karakterer, årstall, kilder og regnestykker alltid dobbeltsjekkes — spesielt i skolearbeid.'
+    + '<div style="margin-top:10px; font-family:JetBrains Mono; font-size:11.5px; color:#8a4653;">EKSEMPEL_KONFIDENS: 94% &nbsp;·&nbsp; FAKTISK_KORREKT: usikkert</div>';
+  fo.appendChild(div);
+  tkSvg.appendChild(fo);
+}
+
+
+/* =========================================================
+   SLIDE 4 — WHAT HAPPENS WHEN YOU HIT ENTER
+   ========================================================= */
+const chatSvg = document.getElementById('chatSvg');
+const chatCaption = document.getElementById('chatCaption');
+const chatInput = document.getElementById('chatInput');
+const chatSendBtn = document.getElementById('chatSendBtn');
+let chatGen = 0;
+
+function rAFAnimate(duration, onStep, onDone, gen, getGen){
+  const t0 = performance.now();
+  function step(t){
+    if(getGen && gen!==getGen()) return;
+    const p = Math.min(1,(t-t0)/duration);
+    const eased = 1-Math.pow(1-p,3);
+    onStep(eased,p);
+    if(p<1) raf(step); else if(onDone) onDone();
+  }
+  raf(step);
+}
+
+function buildChatBase(){
+  clearSvg(chatSvg);
+  chatSvg.appendChild(svgEl('rect',{x:30,y:296,width:70,height:26,rx:5,fill:PAL.ink}));
+  const t1 = svgEl('text',{x:65,y:313,'text-anchor':'middle','font-family':'JetBrains Mono','font-weight':700,'font-size':11, fill:'#fff'}); t1.textContent='DU'; chatSvg.appendChild(t1);
+  chatSvg.appendChild(svgEl('rect',{x:768,y:296,width:100,height:26,rx:5,fill:PAL.accent}));
+  const t2 = svgEl('text',{x:818,y:313,'text-anchor':'middle','font-family':'JetBrains Mono','font-weight':700,'font-size':11, fill:'#fff'}); t2.textContent='MODELL'; chatSvg.appendChild(t2);
+}
+buildChatBase();
+
+chatSendBtn.addEventListener('click', runChatDemo);
+
+function runChatDemo(){
+  chatGen++;
+  const myGen = chatGen;
+  chatSendBtn.disabled = true;
+  buildChatBase();
+  const msg = chatInput.value || 'Hva er hovedstaden i Norge?';
+  const bw = Math.min(340, msg.length*8.4+50);
+
+  // 1) user message bubble
+  const bubbleG = svgEl('g',{transform:'translate(70,120)'});
+  bubbleG.style.transition = 'opacity .8s ease';
+  bubbleG.setAttribute('opacity','0');
+  bubbleG.appendChild(svgEl('rect',{x:0,y:0,width:bw,height:56,rx:10,fill:'#fff',stroke:PAL.ink,'stroke-width':1.5}));
+  const bt = svgEl('text',{x:16,y:34,'font-family':'Inter','font-weight':600,'font-size':13.5, fill:PAL.ink});
+  bt.textContent = msg.length>34? msg.slice(0,34)+'…' : msg;
+  bubbleG.appendChild(bt);
+  chatSvg.appendChild(bubbleG);
+  chatCaption.innerHTML = 'Du skriver meldingen din…';
+  setTimeout(()=>{ if(myGen===chatGen) bubbleG.setAttribute('opacity','1'); }, 60);
+
+  // 1.5) tokenized right away — same mekanikk som forrige side
+  const tokRow = svgEl('g',{transform:'translate(70,188)', opacity:0});
+  tokRow.style.transition = 'opacity .7s ease';
+  setTimeout(()=>{
+    if(myGen!==chatGen) return;
+    chatCaption.innerHTML = 'Først kuttes den i <b>tokens</b> med egne ID-er — akkurat som på forrige side.';
+    const msgTokensViz = tokenizeIllustrative(msg).slice(0,6);
+    let tx = 0;
+    msgTokensViz.forEach((t,ti)=>{
+      const w = Math.max(38, t.length*8.5+18);
+      tokRow.appendChild(svgEl('rect',{x:tx,y:0,width:w,height:28,rx:6,fill:PAL.accentSoft,stroke:PAL.accent,'stroke-width':1.2}));
+      const txt = svgEl('text',{x:tx+w/2,y:13,'text-anchor':'middle','font-family':'Inter','font-weight':700,'font-size':9.5, fill:PAL.ink});
+      txt.textContent = t;
+      tokRow.appendChild(txt);
+      const idTxt = svgEl('text',{x:tx+w/2,y:24,'text-anchor':'middle','font-family':'JetBrains Mono','font-size':7, fill:PAL.accentDeep});
+      idTxt.textContent = '#'+tokenId(t.toLowerCase(), ti);
+      tokRow.appendChild(idTxt);
+      tx += w+6;
+    });
+    chatSvg.appendChild(tokRow);
+    raf(()=>tokRow.setAttribute('opacity','1'));
+  }, 900);
+
+  // 2) context packets + context-window meter
+  const packets = [
+    {label:'systeminstruks', tokens:340, color:PAL.accentSoft, border:PAL.accent},
+    {label:'historikk (tidligere meldinger)', tokens:1120, color:PAL.amberSoft, border:PAL.amber},
+    {label:'verktøy / minner', tokens:96, color:'#EAF7DC', border:PAL.live}
+  ];
+  const msgTokens = Math.max(4, Math.round(msg.length/4.2));
+  const totalTokens = packets.reduce((s,p)=>s+p.tokens,0) + msgTokens;
+  const maxTokens = 128000;
+
+  const ctxGroup = svgEl('g',{});
+  chatSvg.appendChild(ctxGroup);
+
+  setTimeout(()=>{
+    if(myGen!==chatGen) return;
+    chatCaption.innerHTML = 'Men den reiser ikke alene — usynlig <b>kontekst</b> kobles til: systeminstruks, historikk, verktøy og minner.';
+    const stackX = 460, stackY0 = 30, stackGap = 40;
+    packets.forEach((p,i)=>{
+      setTimeout(()=>{
+        if(myGen!==chatGen) return;
+        const g = svgEl('g',{transform:`translate(${stackX},${stackY0+i*stackGap})`, opacity:0});
+        g.style.transition = 'opacity .7s ease';
+        g.appendChild(svgEl('rect',{x:0,y:0,width:340,height:30,rx:7,fill:p.color,stroke:p.border,'stroke-width':1.4}));
+        const lbl = svgEl('text',{x:12,y:20,'font-family':'JetBrains Mono','font-size':11.5,'font-weight':600, fill:PAL.ink}); lbl.textContent = p.label;
+        g.appendChild(lbl);
+        const tok = svgEl('text',{x:328,y:20,'text-anchor':'end','font-family':'JetBrains Mono','font-size':11, fill:PAL.inkSoft}); tok.textContent = p.tokens.toLocaleString('nb-NO')+' tok';
+        g.appendChild(tok);
+        ctxGroup.appendChild(g);
+        raf(()=>g.setAttribute('opacity','1'));
+      }, i*480);
+    });
+
+    // context window meter
+    const meterY = 210, meterX = 460, meterW = 340;
+    ctxGroup.appendChild(svgEl('rect',{x:meterX,y:meterY,width:meterW,height:14,rx:7,fill:'#fff',stroke:PAL.line,'stroke-width':1.3}));
+    const fill = svgEl('rect',{x:meterX,y:meterY,width:0,height:14,rx:7,fill:PAL.accent});
+    ctxGroup.appendChild(fill);
+    const meterLabel = svgEl('text',{id:'ctxMeterLabel',x:meterX,y:meterY+30,'font-family':'JetBrains Mono','font-size':11, fill:PAL.ink,'font-weight':600});
+    meterLabel.textContent = '0 / 128 000 tokens brukt';
+    ctxGroup.appendChild(meterLabel);
+    setTimeout(()=>{
+      if(myGen!==chatGen) return;
+      rAFAnimate(1100, eased=>{
+        const cur = Math.round(totalTokens*eased);
+        fill.setAttribute('width', meterW*(cur/maxTokens));
+        meterLabel.textContent = `${cur.toLocaleString('nb-NO')} / 128 000 tokens brukt`;
+      }, null, myGen, ()=>chatGen);
+    }, 1600);
+  }, 1500);
+
+  // 3) travel to model
+  setTimeout(()=>{
+    if(myGen!==chatGen) return;
+    chatCaption.innerHTML = 'Hele pakken — melding + kontekst — sendes til modellen.';
+    bubbleG.style.transition = 'transform 1.6s cubic-bezier(.4,.1,.2,1), opacity 1.3s ease';
+    bubbleG.setAttribute('transform','translate(700,150) scale(0.55)');
+    bubbleG.setAttribute('opacity','0');
+    ctxGroup.style.transition = 'opacity 1.3s ease';
+    ctxGroup.setAttribute('opacity','0.2');
+    tokRow.setAttribute('opacity','0');
+  }, 4600);
+
+  // 4) model thinking — token-by-token counter
+  const thinkG = svgEl('g',{transform:'translate(760,250)', opacity:0});
+  thinkG.style.transition = 'opacity .5s ease';
+  setTimeout(()=>{
+    if(myGen!==chatGen) return;
+    chatCaption.innerHTML = '<span class="mono-inline">GENERERER</span> — modellen produserer svaret ett token om gangen, ikke hele setninger på én gang.';
+    const dotTag = svgEl('rect',{x:-10,y:-16,width:150,height:24,rx:12,fill:PAL.ink});
+    thinkG.appendChild(dotTag);
+    const dot = svgEl('circle',{cx:4,cy:-4,r:4,fill:PAL.live}); dot.style.animation='blink 1s ease-in-out infinite'; thinkG.appendChild(dot);
+    const cntText = svgEl('text',{id:'tokCounter',x:16,y:0,'font-family':'JetBrains Mono','font-weight':700,'font-size':11.5, fill:'#fff'}); cntText.textContent='token 0'; thinkG.appendChild(cntText);
+    chatSvg.appendChild(thinkG);
+    raf(()=>thinkG.setAttribute('opacity','1'));
+    let n=0; const iv=setInterval(()=>{
+      if(myGen!==chatGen){ clearInterval(iv); return; }
+      n++; const el=document.getElementById('tokCounter'); if(el) el.textContent='token '+n;
+      if(n>=14){ clearInterval(iv); }
+    }, 130);
+  }, 6600);
+
+  // 5) reply streams back, word by word
+  setTimeout(()=>{
+    if(myGen!==chatGen) return;
+    thinkG.remove();
+    ctxGroup.remove();
+    chatCaption.innerHTML = 'Svaret strømmer tilbake — <b>ord for ord</b>, ikke alt på én gang.';
+    const replyWords = 'Oslo er hovedstaden i Norge.'.split(' ');
+    const replyG = svgEl('g',{transform:'translate(210,120)'});
+    chatSvg.appendChild(replyG);
+    replyG.appendChild(svgEl('rect',{x:0,y:-30,width:300,height:46,rx:9,fill:'#fff',stroke:PAL.accent,'stroke-width':1.5}));
+    const rt = svgEl('text',{id:'replyTxt',x:14,y:-2,'font-family':'Inter','font-weight':600,'font-size':13.5, fill:PAL.ink});
+    replyG.appendChild(rt);
+    let shown = '';
+    replyWords.forEach((w,i)=>{
+      setTimeout(()=>{
+        if(myGen!==chatGen) return;
+        shown += (i?' ':'')+w;
+        rt.textContent = shown + (i<replyWords.length-1?' ▍':'');
+        if(i===replyWords.length-1){
+          setTimeout(()=>{
+            if(myGen!==chatGen) return;
+            chatCaption.innerHTML = 'Svaret er også bare <b>tokens</b>, med egne ID-er — generert ett om gangen, akkurat som meldingen din var.';
+            const replyTokens = tokenizeIllustrative('Oslo er hovedstaden i Norge').slice(0,6);
+            const chipRow = svgEl('g',{transform:'translate(210,180)', opacity:0});
+            chipRow.style.transition = 'opacity .7s ease';
+            let cx = 0;
+            replyTokens.forEach((t,ti)=>{
+              const w2 = Math.max(38, t.length*8.5+18);
+              chipRow.appendChild(svgEl('rect',{x:cx,y:0,width:w2,height:28,rx:6,fill:PAL.warnSoft,stroke:PAL.warn,'stroke-width':1.2}));
+              const txt = svgEl('text',{x:cx+w2/2,y:13,'text-anchor':'middle','font-family':'Inter','font-weight':700,'font-size':9.5, fill:PAL.ink});
+              txt.textContent = t;
+              chipRow.appendChild(txt);
+              const idTxt = svgEl('text',{x:cx+w2/2,y:24,'text-anchor':'middle','font-family':'JetBrains Mono','font-size':7, fill:'#7A2233'});
+              idTxt.textContent = '#'+tokenId(t.toLowerCase(), ti);
+              chipRow.appendChild(idTxt);
+              cx += w2+6;
+            });
+            chatSvg.appendChild(chipRow);
+            raf(()=>chipRow.setAttribute('opacity','1'));
+            chatSendBtn.disabled=false;
+          }, 400);
+        }
+      }, i*420);
+    });
+  }, 9000);
+}
+
+
+/* =========================================================
+   SLIDE 3b — DIFFERENT MODELS, DIFFERENT STRENGTHS
+   ========================================================= */
+const modBody = document.getElementById('modBody');
+const modBtn = document.getElementById('modBtn');
+let modStep = 0;
+
+/* tiny deterministic "noise ↔ image" grid used to illustrate diffusion training/generation */
+const DIFF_SCENES = [
+  [ // scene A: sun upper-right, mountain center
+    [0,0,0,0,0,1,1,0],
+    [0,0,0,2,0,0,0,0],
+    [0,0,2,2,2,0,0,0],
+    [0,2,2,2,2,2,0,0],
+    [3,3,3,3,3,3,3,3],
+    [3,3,3,3,3,3,3,3]
+  ],
+  [ // scene B: sun upper-left, mountain shifted right
+    [0,1,1,0,0,0,0,0],
+    [0,0,0,0,0,2,0,0],
+    [0,0,0,0,2,2,2,0],
+    [0,0,0,2,2,2,2,2],
+    [3,3,3,3,3,3,3,3],
+    [3,3,3,3,3,3,3,3]
+  ]
+];
+const DIFF_COLORS = {0:'#DCE9F5', 1:'#F5A623', 2:'#3452E1', 3:'#8FDDB8'};
+const DIFF_NOISE_COLORS = ['#B8BEC7','#8A93A6','#D7DBDE','#9BA0A6','#C7CDD6'];
+function pixelGridSVG(seed, noiseLevel, cell){
+  cell = cell || 14;
+  const scene = DIFF_SCENES[seed % DIFF_SCENES.length];
+  let out = '';
+  for(let r=0;r<scene.length;r++){
+    for(let c=0;c<scene[0].length;c++){
+      const n = pseudo(seed*97+3, r*100+c);
+      const isNoise = n < noiseLevel;
+      const color = isNoise ? DIFF_NOISE_COLORS[Math.floor(pseudo(seed*53+11, r*100+c+500)*DIFF_NOISE_COLORS.length)] : DIFF_COLORS[scene[r][c]];
+      out += `<rect x="${c*cell}" y="${r*cell}" width="${cell-1}" height="${cell-1}" fill="${color}"/>`;
+    }
+  }
+  const w = scene[0].length*cell, h = scene.length*cell;
+  return `<svg viewBox="0 0 ${w} ${h}" width="${w}" height="${h}" style="display:block; border:1px solid var(--line); border-radius:4px;">${out}</svg>`;
+}
+
+const MOD_STEPS = [
+  ()=>`
+    <div class="tag" style="margin-bottom:12px;">BEGREP &middot; MULTIMODAL MODELL</div>
+    <div class="fade-item" style="font-family:var(--serif); font-style:italic; font-weight:500; font-size:clamp(16px,2vw,20px); line-height:1.4; margin-bottom:16px;">&laquo;En multimodal modell forst&aring;r og/eller lager mer enn tekst &mdash; ogs&aring; bilder, lyd og video, i samme nettverk.&raquo;</div>
+    <div class="fade-item" style="display:flex; align-items:center; justify-content:center; gap:10px; margin-bottom:16px; flex-wrap:wrap;">
+      ${['📝 Tekst','🖼️ Bilde','🔊 Lyd','🎬 Video'].map(t=>`<div style="border:1px solid var(--line); border-radius:20px; padding:7px 14px; font-size:12.5px; font-weight:700; background:var(--surface-2);">${t}</div>`).join('<div style="color:var(--ink-faint); font-size:16px;">+</div>')}
+      <div style="color:var(--ink-faint); font-size:16px;">&rarr;</div>
+      <div style="border:1.5px solid var(--accent); background:var(--accent-soft); border-radius:20px; padding:7px 14px; font-size:12.5px; font-weight:700; color:var(--accent-deep);">ÉN modell</div>
+    </div>
+    <p class="fade-item" style="font-size:13px; color:var(--ink-soft); line-height:1.6; margin:0;">F&oslash;r m&aring;tte du bruke separate verkt&oslash;y for hver type innhold. En <b>&laquo;nativt multimodal&raquo;</b> modell er trent p&aring; alle typene <b>samtidig</b>, fra f&oslash;rste dag &mdash; ikke en tekstmodell med &laquo;syn&raquo; limt p&aring; i etterkant.</p>
+  `,
+  ()=>`
+    <div class="tag" style="margin-bottom:12px; background:var(--ink); color:#fff; border-color:var(--ink);">FIRE OMR&Aring;DER &middot; FIRE ULIKE LEDERE (2026)</div>
+    <div class="fade-item" style="display:grid; grid-template-columns:repeat(2,1fr); gap:10px;">
+      <div style="border:1px solid var(--line); border-radius:8px; padding:11px 13px;">
+        <div style="font-family:var(--serif); font-weight:600; font-size:13.5px; margin-bottom:3px;">🧠 Multimodalitet</div>
+        <div class="mono" style="font-size:9.5px; color:var(--accent); margin-bottom:5px;">GEMINI 3.1 PRO (GOOGLE)</div>
+        <div style="font-size:11.5px; color:var(--ink-soft); line-height:1.45;">Forst&aring;r tekst, bilder, lyd og video i &eacute;n og samme modell &mdash; bygget multimodal fra bunnen av.</div>
+      </div>
+      <div style="border:1px solid var(--line); border-radius:8px; padding:11px 13px;">
+        <div style="font-family:var(--serif); font-weight:600; font-size:13.5px; margin-bottom:3px;">💻 Koding</div>
+        <div class="mono" style="font-size:9.5px; color:var(--accent); margin-bottom:5px;">CLAUDE OPUS 5 (ANTHROPIC)</div>
+        <div style="font-size:11.5px; color:var(--ink-soft); line-height:1.45;">L&oslash;ser ~96&nbsp;% av ekte GitHub-feil (SWE-bench Verified) &mdash; trent tungt p&aring; kode og programmeringslogikk.</div>
+      </div>
+      <div style="border:1px solid var(--line); border-radius:8px; padding:11px 13px;">
+        <div style="font-family:var(--serif); font-weight:600; font-size:13.5px; margin-bottom:3px;">🖼️ Bilder</div>
+        <div class="mono" style="font-size:9.5px; color:var(--accent); margin-bottom:5px;">GPT IMAGE 2 (OPENAI)</div>
+        <div style="font-size:11.5px; color:var(--ink-soft); line-height:1.45;">F&oslash;lger kompliserte instruksjoner best av alle, ifølge blinde menneske-vurderinger.</div>
+      </div>
+      <div style="border:1px solid var(--line); border-radius:8px; padding:11px 13px;">
+        <div style="font-family:var(--serif); font-weight:600; font-size:13.5px; margin-bottom:3px;">🎬 Video</div>
+        <div class="mono" style="font-size:9.5px; color:var(--accent); margin-bottom:5px;">VEO 3.1 (GOOGLE) / KLING 3.0 (KUAISHOU)</div>
+        <div style="font-size:11.5px; color:var(--ink-soft); line-height:1.45;">Veo er sterkest p&aring; lyd og kamerarealisme, Kling p&aring; menneskelig bevegelse.</div>
+      </div>
+    </div>
+  `,
+  ()=>`
+    <div class="tag warn" style="margin-bottom:12px;">ETTERTANKE &middot; FINNES DET ÉN &laquo;BEST&raquo; MODELL?</div>
+    <div class="fade-item" style="border:1px solid var(--line); border-radius:8px; padding:12px 14px; margin-bottom:10px;">
+      <div class="mono" style="font-size:10px; color:var(--ink-faint); margin-bottom:5px;">JA, DET FINNES EN SAMLET RANGERING</div>
+      <div style="font-size:12.5px; color:var(--ink-soft); line-height:1.55;">Sammensatte poengsummer («intelligence index») slår flere tester sammen til &eacute;n rangering. Akkurat n&aring; (2026) er <b>GPT-6 Astra</b> og <b>Claude Fable 5.1</b> omtrent likestilt p&aring; topp.</div>
+    </div>
+    <div class="fade-item" style="border:1.5px solid var(--accent); background:var(--accent-soft); border-radius:8px; padding:12px 14px; margin-bottom:10px;">
+      <div class="mono" style="font-size:10px; color:var(--accent-deep); margin-bottom:5px;">MEN INGEN TOPPER ALLE DELTESTENE</div>
+      <div style="font-size:12.5px; color:var(--ink); line-height:1.55; font-weight:600;">GPT-6 Astra vinner klart p&aring; vanskelig matematikk og databruk, mens andre modeller &mdash; blant dem Claude, Gemini, DeepSeek og Qwen &mdash; hver leder sin egen deltest av 14 totalt.</div>
+    </div>
+    <p class="fade-item" style="font-size:12.5px; color:var(--ink-soft); line-height:1.6; margin:0 0 12px 0;">Og en poengsum for tekst-resonnering kan uansett ikke sammenlignes direkte med &aring; lage video eller bilder &mdash; det er helt andre ferdigheter, m&aring;lt p&aring; helt andre m&aring;ter.</p>
+    <p class="fade-item" style="font-family:var(--serif); font-style:italic; font-weight:500; font-size:14px; line-height:1.5; margin:0; text-align:center;">Det finnes alltid en &laquo;nummer &eacute;n&raquo; p&aring; &eacute;n rangering &mdash; men ingen modell vinner alle rangeringene samtidig.</p>
+  `,
+  ()=>`
+    <div class="tag" style="margin-bottom:12px;">STEG FOR STEG &middot; SLIK BLIR EN MODELL TIL</div>
+    <div class="fade-item" style="display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:12px;">
+      <div style="border:1px solid var(--line); border-radius:8px; padding:12px 14px;">
+        <div class="mono" style="font-size:10.5px; color:var(--ink-faint); margin-bottom:6px;">1 &middot; GRUNNTRENING (PRETRAINING)</div>
+        <div style="font-size:12.5px; line-height:1.65;">Modellen leser enorme mengder tekst (og for multimodale modeller: bilder, lyd, video) og &oslash;ver p&aring; &aring; gjette neste token, om og om igjen. Dette er den desidert dyreste og mest str&oslash;mkrevende delen &mdash; enorme mengder regnekraft og str&oslash;m, i datasentre bygget nettopp for form&aring;let.</div>
+      </div>
+      <div style="border:1.5px solid var(--live-deep); background:#EAF7DC; border-radius:8px; padding:12px 14px;">
+        <div class="mono" style="font-size:10.5px; color:var(--live-deep); margin-bottom:6px;">2 &middot; ETTERTRENING (POST-TRAINING)</div>
+        <div style="font-size:12.5px; line-height:1.65; font-weight:600;">Modellen finpusses: f&oslash;rst p&aring; gode eksempelsvar (supervised fine-tuning), deretter ved at mennesker rangerer hvilke svar de foretrekker &mdash; modellen justeres til &aring; ligne mer p&aring; favorittene (RLHF).</div>
+      </div>
+    </div>
+    <p class="fade-item" style="font-size:13px; color:var(--ink-soft); line-height:1.6; margin:0;">Det er nettopp i <b>ettertreningen</b> spesialiseringen skjer: ekstra fine-tuning p&aring; kode gir en kodemodell, ekstra fine-tuning p&aring; bilde-tekst-par gir en bildemodell. Begge stegene skjer <b>f&oslash;r</b> modellen slippes &mdash; og krever egne, dyre treningsrunder i selskapets datasentre.</p>
+  `,
+  ()=>`
+    <div class="tag" style="margin-bottom:10px; background:var(--ink); color:#fff; border-color:var(--ink);">EKSEMPEL &middot; HVORDAN TRENES EN BILDEMODELL?</div>
+    <div class="fade-item" style="margin-bottom:10px;">
+      <div class="mono" style="font-size:10px; color:var(--ink-faint); margin-bottom:6px;">TRENING &mdash; ekte bilder f&aring;r st&oslash;y lagt til, steg for steg</div>
+      <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+        ${[0,0.35,0.7,1].map(n=>pixelGridSVG(0,n)).join('<span style="color:var(--ink-faint); font-size:16px;">→</span>')}
+      </div>
+      <div style="font-size:11px; color:var(--ink-soft); margin-top:4px;">Nettverket f&aring;r se hvert steg, og tr&aelig;r p&aring; &aring; <b>gjette akkurat hvilken st&oslash;y</b> som ble lagt til &mdash; styrt av billedteksten som h&oslash;rer til.</div>
+    </div>
+    <div class="fade-item" style="margin-bottom:10px;">
+      <div class="mono" style="font-size:10px; color:var(--accent-deep); margin-bottom:6px;">GENERERING &mdash; helt ny st&oslash;y, samme oppskrift baklengs</div>
+      <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+        ${[1,0.7,0.35,0].map(n=>pixelGridSVG(0,n)).join('<span style="color:var(--ink-faint); font-size:16px;">→</span>')}
+      </div>
+      <div style="font-size:11px; color:var(--ink-soft); margin-top:4px;">For &aring; lage et <b>nytt</b> bilde starter modellen med rent tilfeldig st&oslash;y, og fjerner den steg for steg &mdash; styrt av prompten din &mdash; helt til et bilde dukker frem.</div>
+    </div>
+    <p class="fade-item" style="font-size:12px; color:var(--ink-soft); line-height:1.6; margin:0;">I praksis skjer ikke dette p&aring; r&aring; piksler, men p&aring; en <b>komprimert</b> versjon av bildet &mdash; litt som at tekst komprimeres til tokens. Denne oppskriften kalles <b>diffusjon</b>, og er en helt annen prosess enn tekstmodellers token-for-token-gjetting.</p>
+  `,
+  ()=>`
+    <div class="tag warn" style="margin-bottom:10px;">TO SPØRSMÅL ALLE LURER PÅ</div>
+    <div class="fade-item" style="border:1px solid var(--line); border-radius:8px; padding:11px 13px; margin-bottom:10px;">
+      <div style="font-family:var(--serif); font-weight:600; font-size:13px; margin-bottom:6px;">Hvorfor blir bildet litt annerledes hver gang?</div>
+      <div style="display:flex; gap:14px; align-items:center; margin-bottom:6px;">
+        <div style="text-align:center;">${pixelGridSVG(0,0)}<div class="mono" style="font-size:9px; color:var(--ink-faint); margin-top:2px;">FRØ #1</div></div>
+        <div style="text-align:center;">${pixelGridSVG(1,0)}<div class="mono" style="font-size:9px; color:var(--ink-faint); margin-top:2px;">FRØ #2</div></div>
+        <div style="font-size:11.5px; color:var(--ink-soft); max-width:260px;">Samme prompt, men to ulike tilfeldige st&oslash;y-&laquo;fr&oslash;&raquo; (seeds) &aring; starte fra. Ulikt fr&oslash; &rarr; ulikt bilde. L&aring;ser du fr&oslash;et, f&aring;r du samme bilde igjen.</div>
+      </div>
+    </div>
+    <div class="fade-item" style="border:1px solid var(--line); border-radius:8px; padding:11px 13px;">
+      <div style="font-family:var(--serif); font-weight:600; font-size:13px; margin-bottom:6px;">Hvorfor kan jeg ikke bare redigere &eacute;n liten del?</div>
+      <div style="font-size:11.5px; color:var(--ink-soft); line-height:1.55;">Modellen har ingen <b>&laquo;lag&raquo;</b> slik som i et bilderedigeringsprogram &mdash; bare &eacute;n sammenhengende sky av tall, der alle delene p&aring;virker hverandre under st&oslash;y-fjerningen. Be den &laquo;bare bytte hatten&raquo;, og den m&aring; som regel beregne <b>hele</b> bildet p&aring; nytt &mdash; da kan alt annet ogs&aring; skifte litt. Det finnes en delvis l&oslash;sning (<b>inpainting</b> &mdash; du markerer n&oslash;yaktig omr&aring;det som skal endres), men selv da m&aring; kantene beregnes p&aring; nytt for &aring; se sømløse ut.</div>
+    </div>
+  `
+];
+
+function modReset(){
+  modStep = 0;
+  modBody.innerHTML = '<p style="color:var(--ink-faint); font-size:13.5px;">Trykk «Vis meg» for å starte.</p>';
+  modBtn.textContent = 'Vis meg →';
+}
+modReset();
+modBtn.addEventListener('click', modAdvance);
+function modAdvance(){
+  modStep++;
+  if(modStep>MOD_STEPS.length){ modReset(); return; }
+  modBody.innerHTML = MOD_STEPS[modStep-1]();
+  fadeIn(modBody, 80, 130);
+  modBtn.textContent = modStep===MOD_STEPS.length ? '↺ Start på nytt' : 'Neste steg ›';
+}
+modAdvance();
+
+
+/* =========================================================
+   SLIDE 3c — RECAP OF PART 1 + LEGO PROMPTING EXERCISE
+   ========================================================= */
+const recap1Body = document.getElementById('recap1Body');
+const recap1Btn = document.getElementById('recap1Btn');
+let recap1Step = 0;
+
+const RECAP1_TOPICS = [
+  'Software spiste verden — Andreessen, 2011',
+  'Tid til 1 million brukere — hvor fort teknologi sprer seg',
+  'KI spiser software — Huang, 2017',
+  'Hjerne og hender — hvorfor KI er annerledes',
+  'KI vs. mennesker — benchmarks over tid',
+  'Fra tekst til gjetning — tokens, embeddings, prediksjon',
+  'Hva skjer i chat — kontekst og generering',
+  'Context engineering — fire kilder til kontekst',
+  'Trening, kontekst &amp; tokens — hvordan de henger sammen',
+  'Ulike modeller, ulike styrker — spesialisering og trening'
+];
+
+const LEGO_SVG = `
+  <svg viewBox="0 0 320 150" style="width:100%; max-width:420px; height:auto; display:block; margin:0 auto;">
+    <line x1="10" y1="122" x2="310" y2="122" stroke="#DCDFD9" stroke-width="1.4"/>
+    <line x1="160" y1="18" x2="160" y2="122" stroke="#DCDFD9" stroke-width="1.2" stroke-dasharray="3 5"/>
+    <!-- speech path arcing between the two, since their backs are turned -->
+    <path d="M 92 46 Q 160 12 228 46" fill="none" stroke="#9BA0A6" stroke-width="1.5" stroke-dasharray="4 4"/>
+    <text x="160" y="26" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#585F68">"tre røde, én blå på toppen…"</text>
+    <!-- left figure: PROMPTEREN -->
+    <circle cx="78" cy="58" r="13" fill="#14171C"/>
+    <path d="M 60 96 Q 78 74 96 96 L 92 112 Q 78 120 64 112 Z" fill="#3452E1" stroke="#14171C" stroke-width="1.4"/>
+    <text x="78" y="138" text-anchor="middle" font-family="JetBrains Mono" font-weight="700" font-size="9.5" fill="#3452E1">PROMPTEREN</text>
+    <!-- lego stack in front of prompteren (the finished, hidden model) -->
+    <rect x="55" y="104" width="16" height="9" rx="1.5" fill="#E8465F" stroke="#14171C" stroke-width="1"/>
+    <rect x="55" y="95" width="16" height="9" rx="1.5" fill="#F5A623" stroke="#14171C" stroke-width="1"/>
+    <rect x="59" y="86" width="8" height="9" rx="1.5" fill="#3452E1" stroke="#14171C" stroke-width="1"/>
+    <!-- right figure: KI-MODELLEN -->
+    <circle cx="242" cy="58" r="13" fill="#14171C"/>
+    <path d="M 224 96 Q 242 74 260 96 L 256 112 Q 242 120 228 112 Z" fill="#7FCB3F" stroke="#14171C" stroke-width="1.4"/>
+    <text x="242" y="138" text-anchor="middle" font-family="JetBrains Mono" font-weight="700" font-size="9.5" fill="#4C8C1E">KI-MODELLEN</text>
+    <!-- scattered loose bricks in front of KI-modellen, not yet built -->
+    <rect x="212" y="107" width="13" height="8" rx="1.5" fill="#E8465F" stroke="#14171C" stroke-width="1"/>
+    <rect x="234" y="110" width="13" height="8" rx="1.5" fill="#F5A623" stroke="#14171C" stroke-width="1" transform="rotate(8 240 114)"/>
+    <rect x="258" y="104" width="10" height="8" rx="1.5" fill="#3452E1" stroke="#14171C" stroke-width="1" transform="rotate(-6 263 108)"/>
+  </svg>
+`;
+
+const RECAP1_STEPS = [
+  ()=>`
+    <div class="tag" style="margin-bottom:12px; background:var(--ink); color:#fff; border-color:var(--ink);">✅ DEL 1 FULLFØRT</div>
+    <div class="fade-item" style="display:grid; grid-template-columns:repeat(2,1fr); gap:7px; margin-bottom:6px;">
+      ${RECAP1_TOPICS.map((t,i)=>`
+        <div style="display:flex; align-items:baseline; gap:8px; border:1px solid var(--line); border-radius:6px; padding:7px 10px;">
+          <span class="mono" style="font-size:10px; color:var(--accent); font-weight:700;">${String(i+1).padStart(2,'0')}</span>
+          <span style="font-size:11.5px; color:var(--ink); line-height:1.35;">${t}</span>
+        </div>`).join('')}
+    </div>
+    <p class="fade-item" style="font-size:12.5px; color:var(--ink-soft); line-height:1.6; margin:8px 0 0 0; text-align:center;">Ti temaer, fra &laquo;hvorfor nå&raquo; til treningsprosessen bak modellene. Nå: en praktisk øvelse f&oslash;r vi g&aring;r videre til Del 2.</p>
+  `,
+  ()=>`
+    <div class="tag warn" style="margin-bottom:12px;">PRAKTISK ØVELSE · LEGO-PROMPTING</div>
+    <div class="fade-item" style="font-family:var(--serif); font-weight:600; font-size:16px; margin-bottom:10px; text-align:center;">Rollespill: vær en språkmodell</div>
+    <div class="fade-item">${LEGO_SVG}</div>
+    <div class="fade-item" style="border:1px solid var(--line); border-radius:8px; padding:12px 14px; margin-top:10px;">
+      <ol style="margin:0; padding-left:18px; font-size:12.5px; color:var(--ink); line-height:1.75;">
+        <li>Sitt <b>rygg mot rygg</b> to og to. &Eacute;n er &laquo;<b>KI-modellen</b>&raquo;, &eacute;n er &laquo;<b>prompteren</b>&raquo;.</li>
+        <li>Prompteren bygger en liten Lego-modell &mdash; uten at KI-modellen ser den.</li>
+        <li>Prompteren <b>beskriver</b> modellen med ord, bit for bit. KI-modellen bygger etter beskrivelsen alene &mdash; kun ut fra det som blir sagt.</li>
+        <li>Sammenlign resultatene. Hvor likt ble det? Hva gjorde beskrivelsen vanskelig &aring; f&oslash;lge?</li>
+        <li><b>Bytt roller</b>, og gj&oslash;r neste bygg litt vanskeligere. Gjenta flere runder.</li>
+      </ol>
+    </div>
+    <p class="fade-item" style="font-family:var(--serif); font-style:italic; font-weight:500; font-size:13.5px; line-height:1.5; margin:10px 0 0 0; text-align:center;">Akkurat som en KI m&aring; &laquo;KI-modellen&raquo; bygge kun ut fra ordene den f&aring;r &mdash; ingen bilder, ingen tankeleser. Jo mer presist spr&aring;k, jo bedre resultat.</p>
+  `
+];
+
+function recap1Reset(){
+  recap1Step = 0;
+  recap1Body.innerHTML = '<p style="color:var(--ink-faint); font-size:13.5px;">Trykk «Vis meg» for å starte.</p>';
+  recap1Btn.textContent = 'Vis meg →';
+}
+recap1Reset();
+recap1Btn.addEventListener('click', recap1Advance);
+function recap1Advance(){
+  recap1Step++;
+  if(recap1Step>RECAP1_STEPS.length){ recap1Reset(); return; }
+  recap1Body.innerHTML = RECAP1_STEPS[recap1Step-1]();
+  fadeIn(recap1Body, 80, 130);
+  recap1Btn.textContent = recap1Step===RECAP1_STEPS.length ? '↺ Start på nytt' : 'Neste steg ›';
+}
+recap1Advance();
+
+
+/* =========================================================
+   SLIDE 4b — CONTEXT ENGINEERING
+   ========================================================= */
+const ctxBody = document.getElementById('ctxBody');
+const ctxBtn = document.getElementById('ctxBtn');
+let ctxStep = 0;
+
+const CTX_STEPS = [
+  ()=>`
+    <div class="tag" style="margin-bottom:12px;">2025 &middot; ANDREJ KARPATHY, KI-FORSKER (TIDLIGERE OPENAI OG TESLA)</div>
+    <div class="fade-item" style="font-family:var(--serif); font-style:italic; font-weight:500; font-size:clamp(16px,2vw,21px); line-height:1.4; margin-bottom:16px;">&laquo;Context engineering er den fintfølende kunsten &aring; fylle kontekstvinduet med akkurat riktig informasjon for neste steg.&raquo;</div>
+    <div class="fade-item" style="display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:14px;">
+      <div style="border:1px solid var(--line); border-radius:8px; padding:14px 16px;">
+        <div class="mono" style="font-size:10.5px; color:var(--ink-faint); margin-bottom:6px;">TRENING &mdash; L&AElig;RERUTDANNINGEN</div>
+        <div style="font-size:13px; line-height:1.6;">Alt vikaren l&aelig;rte &aring;r i forveien: pedagogikk, fagstoff, generell erfaring. L&aelig;rt &eacute;n gang &mdash; brukes i <b>alle</b> klasserom, uansett dag.</div>
+      </div>
+      <div style="border:1.5px solid var(--accent); background:var(--accent-soft); border-radius:8px; padding:14px 16px;">
+        <div class="mono" style="font-size:10.5px; color:var(--accent-deep); margin-bottom:6px;">KONTEKST &mdash; PULTEN I DAG</div>
+        <div style="font-size:13px; line-height:1.6; font-weight:600;">Det som faktisk ligger foran vikaren n&aring; &mdash; timeplan, elevliste, tavlenotater. Ny for <b>hver</b> &oslash;kt, og med begrenset plass.</div>
+      </div>
+    </div>
+    <p class="fade-item" style="font-size:13px; color:var(--ink-soft); line-height:1.6; margin:0;">For en spr&aring;kmodell er <b>treningsdata</b> det samme som modellens &laquo;vekter&raquo; &mdash; formet &eacute;n gang under trening, og likt for alle. <b>Kontekst</b> er derimot all tekst som skrives inn i kontekstvinduet f&oslash;r akkurat denne &oslash;kten &mdash; og m&aring; bygges p&aring; nytt hver gang.</p>
+  `,
+  ()=>`
+    <div class="tag" style="margin-bottom:12px; background:var(--ink); color:#fff; border-color:var(--ink);">FIRE KILDER TIL KONTEKST</div>
+    <div class="fade-item" style="display:grid; grid-template-columns:repeat(2,1fr); gap:10px; margin-bottom:12px;">
+      <div style="border:1px solid var(--line); border-radius:8px; padding:11px 13px;">
+        <div style="font-family:var(--serif); font-weight:600; font-size:13.5px; margin-bottom:3px;">📋 Systeminstruks</div>
+        <div class="mono" style="font-size:9.5px; color:var(--ink-faint); margin-bottom:5px;">= BESKJEDEN FRA REKTOR</div>
+        <div style="font-size:11.5px; color:var(--ink-soft); line-height:1.45;">Rammer satt av appen f&oslash;r du sier noe. Usynlig for deg, varer hele &oslash;kten.</div>
+      </div>
+      <div style="border:1px solid var(--line); border-radius:8px; padding:11px 13px;">
+        <div style="font-family:var(--serif); font-weight:600; font-size:13.5px; margin-bottom:3px;">🗂️ Historikk</div>
+        <div class="mono" style="font-size:9.5px; color:var(--ink-faint); margin-bottom:5px;">= NOTATENE P&Aring; TAVLEN</div>
+        <div style="font-size:11.5px; color:var(--ink-soft); line-height:1.45;">Tidligere meldinger i samtalen. Faller ut f&oslash;rst n&aring;r kontekstvinduet blir fullt.</div>
+      </div>
+      <div style="border:1px solid var(--line); border-radius:8px; padding:11px 13px;">
+        <div style="font-family:var(--serif); font-weight:600; font-size:13.5px; margin-bottom:3px;">✍️ Prompten din</div>
+        <div class="mono" style="font-size:9.5px; color:var(--ink-faint); margin-bottom:5px;">= SP&Oslash;RSM&Aring;LET DITT N&Aring;</div>
+        <div style="font-size:11.5px; color:var(--ink-soft); line-height:1.45;">Den eneste kilden <b>du</b> styrer direkte, akkurat i dette &oslash;yeblikket.</div>
+      </div>
+      <div style="border:1px solid var(--line); border-radius:8px; padding:11px 13px;">
+        <div style="font-family:var(--serif); font-weight:600; font-size:13.5px; margin-bottom:3px;">📍 Signaler om deg</div>
+        <div class="mono" style="font-size:9.5px; color:var(--ink-faint); margin-bottom:5px;">= HVILKET KLASSEROM</div>
+        <div style="font-size:11.5px; color:var(--ink-soft); line-height:1.45;">Noen apper legger til en kort linje utledet fra <b>IP-adressen</b> din &mdash; f.eks. &laquo;bruker er trolig i Norge, CET&raquo;. Modellen ser aldri IP-adressen selv, bare denne teksten.</div>
+      </div>
+    </div>
+    <p class="fade-item" style="font-size:12.5px; color:var(--ink-soft); line-height:1.6; margin:0;">Siden kontekstvinduet har en fast, begrenset st&oslash;rrelse, m&aring; noen aktivt velge hva som f&aring;r plass. LangChain kaller de fire grepene <b>skrive, velge, komprimere</b> og <b>isolere</b> &mdash; det er selve h&aring;ndverket bak &laquo;context engineering&raquo;.</p>
+  `
+];
+
+function ctxReset(){
+  ctxStep = 0;
+  ctxBody.innerHTML = '<p style="color:var(--ink-faint); font-size:13.5px;">Trykk «Vis meg» for å starte.</p>';
+  ctxBtn.textContent = 'Vis meg →';
+}
+ctxReset();
+ctxBtn.addEventListener('click', ctxAdvance);
+function ctxAdvance(){
+  ctxStep++;
+  if(ctxStep>CTX_STEPS.length){ ctxReset(); return; }
+  ctxBody.innerHTML = CTX_STEPS[ctxStep-1]();
+  fadeIn(ctxBody, 80, 130);
+  ctxBtn.textContent = ctxStep===CTX_STEPS.length ? '↺ Start på nytt' : 'Neste steg ›';
+}
+ctxAdvance();
+
+
+/* =========================================================
+   SLIDE 4b2 — HOW TRAINING, CONTEXT & TOKENS FIT TOGETHER
+   ========================================================= */
+const linkBody = document.getElementById('linkBody');
+const linkBtn = document.getElementById('linkBtn');
+let linkStep = 0;
+
+const LINK_STEPS = [
+  ()=>`
+    <div class="tag" style="margin-bottom:12px;">SPØRSMÅL 1 &middot; GIR TRENINGSDATA DIMENSJONENE?</div>
+    <div class="fade-item" style="display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:14px;">
+      <div style="border:1px solid var(--line); border-radius:8px; padding:12px 14px;">
+        <div class="mono" style="font-size:10.5px; color:var(--ink-faint); margin-bottom:6px;">ARKITEKTUR &mdash; F&Oslash;R TRENING</div>
+        <div style="font-size:13px; line-height:1.65;">Antall dimensjoner (f.eks. <b>1536</b>) er en designbeslutning &mdash; bestemt av ingeni&oslash;rene f&oslash;r modellen har sett ett eneste ord.</div>
+      </div>
+      <div style="border:1.5px solid var(--accent); background:var(--accent-soft); border-radius:8px; padding:12px 14px;">
+        <div class="mono" style="font-size:10.5px; color:var(--accent-deep); margin-bottom:6px;">TRENING &mdash; FYLLER TABELLEN</div>
+        <div style="font-size:13px; line-height:1.65; font-weight:600;">Treningsdataen bestemmer <i>tallverdiene</i> i hver av de 1536 dimensjonene, for hver av de ~100&nbsp;256 tokenene i ordboken.</div>
+      </div>
+    </div>
+    <p class="fade-item" style="font-size:13px; color:var(--ink-soft); line-height:1.6; margin:0;">Resultatet er &eacute;n stor, fast tabell: <b>token &rarr; 1536 tall</b>. S&aring; snart treningen er ferdig, fryses tabellen &mdash; og gjenbrukes uendret for absolutt alt modellen gj&oslash;r videre.</p>
+  `,
+  ()=>`
+    <div class="tag" style="margin-bottom:12px; background:var(--ink); color:#fff; border-color:var(--ink);">SP&Oslash;RSM&Aring;L 2 &middot; BLIR HISTORIKK OGS&Aring; TIL TOKENS?</div>
+    <div class="fade-item" style="border:1px solid var(--line); border-radius:8px; padding:14px 16px; margin-bottom:12px;">
+      <div style="font-family:'JetBrains Mono',monospace; font-size:10.5px; line-height:2.1;">
+        <span style="background:var(--accent-soft); border:1px solid var(--accent); border-radius:4px; padding:2px 7px;">systeminstruks: "svar kort"</span>
+        <span style="color:var(--ink-faint);"> + </span>
+        <span style="background:var(--amber-soft); border:1px solid var(--amber); border-radius:4px; padding:2px 7px;">historikk: "hovedstaden i Frankrike? &mdash; Paris."</span>
+        <span style="color:var(--ink-faint);"> + </span>
+        <span style="background:#EAF7DC; border:1px solid var(--live); border-radius:4px; padding:2px 7px;">din melding: "og i Tyskland?"</span>
+      </div>
+      <div style="text-align:center; color:var(--ink-faint); font-size:11px; margin:8px 0;">&darr; limes sammen til &Eacute;N tekst-str&oslash;m, f&oslash;r noe som helst tokeniseres &darr;</div>
+      <div style="font-family:'JetBrains Mono',monospace; font-size:10.5px; color:var(--accent-deep); text-align:center;">#412&nbsp; #58&nbsp; #9931&nbsp; #201&nbsp; #77&nbsp; #642&nbsp; #88&nbsp; <span style="color:var(--ink-faint);">&hellip; alle sl&aring;r opp i SAMME fryste tabell</span></div>
+    </div>
+    <p class="fade-item" style="font-size:13px; color:var(--ink-soft); line-height:1.6; margin:0;">Systeminstruks, historikk og prompten din har ingen egen &laquo;kanal&raquo; inn i modellen. Alt limes sammen til &eacute;n lang sekvens og tokeniseres likt &mdash; det er derfor modellen skj&oslash;nner at &laquo;Tyskland&raquo; alene betyr &laquo;hva er hovedstaden i Tyskland&raquo;: den <i>leser</i> hele historikken p&aring; nytt, som tokens, hver eneste gang.</p>
+  `,
+  ()=>`
+    <div class="tag warn" style="margin-bottom:12px;">DERFOR</div>
+    <div class="fade-item" style="font-family:var(--serif); font-style:italic; font-weight:500; font-size:clamp(16px,2vw,20px); line-height:1.4; margin-bottom:16px;">&laquo;Hukommelse» i en samtale er bare tekst som sendes p&aring; nytt &mdash; ikke ny l&aelig;ring.</div>
+    <p class="fade-item" style="font-size:13.5px; line-height:1.6; margin:0 0 12px 0;">Modellens vekter &mdash; inkludert hele embedding-tabellen fra sp&oslash;rsm&aring;l 1 &mdash; er <b>fryst</b>. Ingenting av det som skjer i chatten din endrer disse tallene. Det du opplever som at KI-en &laquo;husker&raquo; noe, er rett og slett fordi hele historikken sendes med som tokens p&aring; nytt for hver melding.</p>
+    <p class="fade-item" style="font-size:13.5px; line-height:1.6; margin:0;">Lukker du chatten &mdash; eller fyller kontekstvinduet, som p&aring; en tidligere side &mdash; er den &laquo;hukommelsen&raquo; borte for godt. Modellen selv er nøyaktig den samme, uendrede modellen som f&oslash;r du skrev noe som helst.</p>
+  `
+];
+
+function linkReset(){
+  linkStep = 0;
+  linkBody.innerHTML = '<p style="color:var(--ink-faint); font-size:13.5px;">Trykk «Vis meg» for å starte.</p>';
+  linkBtn.textContent = 'Vis meg →';
+}
+linkReset();
+linkBtn.addEventListener('click', linkAdvance);
+function linkAdvance(){
+  linkStep++;
+  if(linkStep>LINK_STEPS.length){ linkReset(); return; }
+  linkBody.innerHTML = LINK_STEPS[linkStep-1]();
+  fadeIn(linkBody, 80, 130);
+  linkBtn.textContent = linkStep===LINK_STEPS.length ? '↺ Start på nytt' : 'Neste steg ›';
+}
+linkAdvance();
+
+
+/* init */
+goTo(0);
+</script>
+</body>
+</html>

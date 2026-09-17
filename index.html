@@ -35,7 +35,7 @@
   .hero h1{ font-size:clamp(28px,4vw,42px); line-height:1.15; margin-bottom:14px; }
   .hero p{ color:var(--ink-soft); font-size:15.5px; line-height:1.6; margin:0; }
 
-  .cards{ display:grid; grid-template-columns:1fr 1fr; gap:20px; width:100%; max-width:820px; }
+  .cards{ display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:20px; width:100%; max-width:1080px; }
   @media (max-width:680px){ .cards{ grid-template-columns:1fr; } }
 
   .card{
@@ -100,10 +100,24 @@
         <div class="tag">Del 2 · Verden rundt</div>
         <div class="tag-warn">Ikke ferdig</div>
       </div>
-      <h2>Infrastruktur, aktører og sikkerhet</h2>
-      <div class="topics">Datasentre &amp; nettverket · hvem bygger KI · kan du lure en KI (prompt injection)</div>
-      <p>3 sider som zoomer ut fra teknikken til hvem som bygger den — og hvordan den kan misbrukes.</p>
+      <h2>Infrastruktur og aktører</h2>
+      <div class="topics">Datasentre &amp; nettverket · hvem bygger KI</div>
+      <p>2 sider som zoomer ut fra teknikken til hvem som bygger den.</p>
       <div class="go">Start Del 2 →</div>
+    </a>
+    <a class="card" href="del3.html">
+      <div class="tag">Del 3 · Sikkerhet</div>
+      <h2>Cybersikkerhet og KI</h2>
+      <div class="topics">De største sårbarhetene · sårbarheter i KI-systemer · prompt injection · ekte eksempler</div>
+      <p>4 sider om hvordan KI både arver og skaper nye sikkerhetsutfordringer.</p>
+      <div class="go">Start Del 3 →</div>
+    </a>
+    <a class="card" href="del4.html">
+      <div class="tag">Del 4 · Nettverk</div>
+      <h2>Kraften i menneskelige og digitale nettverk</h2>
+      <div class="topics">Six degrees of separation · eksponentiell rekkevidde · store sosiale medier · bygge et profesjonelt nettverk · LinkedIn-tips</div>
+      <p>5 sider om hvordan relasjoner — og et godt LinkedIn-nettverk — åpner dører.</p>
+      <div class="go">Start Del 4 →</div>
     </a>
   </div>
 

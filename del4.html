@@ -237,11 +237,21 @@
       <div class="slide-inner">
         <div class="eyebrow">Matematikken bak nettverk</div>
         <h1 class="slide-h">Nettverket ditt vokser eksponentielt, ikke lineært</h1>
-        <p class="slide-sub">Antropologen Robin Dunbar anslo at mennesker klarer å holde stabil kontakt med rundt 150 personer. Se hva som skjer når de kontaktene har sine egne 150.</p>
+        <p class="slide-sub">Du bruker kanskje bare 5–6 relasjoner aktivt om gangen. Klikk deg gjennom et forenklet nettverk, ett valg av gangen, og se hvor fort det vokser.</p>
+
+        <div class="panel" style="width:100%;">
+          <div class="tag" id="branchStatTag" style="margin-bottom:8px;">Klikk på «DEG» for å se hvor stort nettverket egentlig er.</div>
+          <svg id="branchSvg" class="illo" viewBox="0 0 900 560"></svg>
+          <div class="step-caption" id="branchCaption">Klikk på den svarte sirkelen («DEG») for å starte.</div>
+        </div>
+
+        <div class="btn-row">
+          <button class="btn ghost" id="branchResetBtn" style="border:1.5px solid var(--ink);">↺ Start på nytt</button>
+        </div>
 
         <div class="panel" style="width:100%;">
           <div id="expCards" style="display:grid; grid-template-columns:repeat(3,1fr); gap:12px;"></div>
-          <div class="step-caption" style="margin-top:12px;">Forenklet regnestykke — i praksis overlapper nettverk mye. Men prinsippet er reelt: hvert skritt utover multipliserer rekkevidden din, det legger ikke bare til på den.</div>
+          <div class="step-caption" style="margin-top:12px;">Antropologen Robin Dunbar anslo at mennesker klarer å holde stabil kontakt med rundt 150 personer — her er de virkelige tallene. Nettverket over er forenklet til 5–6 forbindelser per steg for å være tegnbart, men prinsippet er identisk: hvert skritt utover multipliserer rekkevidden din, det legger ikke bare til på den.</div>
         </div>
       </div>
     </section>
@@ -251,7 +261,7 @@
       <div class="slide-inner">
         <div class="eyebrow">Digitale nettverk</div>
         <h1 class="slide-h">Plattformene som kobler sammen milliarder</h1>
-        <p class="slide-sub">Omtrentlige tall selskapene selv oppgir for aktive brukere per måned (2024/2025) — større enn de fleste land.</p>
+        <p class="slide-sub">Klikk på en plattform for å se tallene — omtrentlige tall selskapene selv oppgir for aktive brukere per måned (2024/2025).</p>
 
         <div class="panel" style="width:100%;">
           <div id="platformList" style="display:flex; flex-direction:column; gap:8px;"></div>
@@ -464,6 +474,163 @@ function degAdvance(){
 
 
 /* =========================================================
+   SLIDE 2a — CLICK-DRIVEN BRANCHING DRILL-DOWN
+   ========================================================= */
+const branchSvg = document.getElementById('branchSvg');
+const branchCaption = document.getElementById('branchCaption');
+const branchStatTag = document.getElementById('branchStatTag');
+const branchResetBtn = document.getElementById('branchResetBtn');
+
+const BRANCH = 6;
+const B_CENTER = {x:450, y:290};
+const B_RADII = [0, 78, 168, 240];
+const LEVEL_COUNTS = [1, 6, 36, 216, 1296, 7776];
+function cum(n){ let s=0; for(let i=0;i<=n;i++) s+=LEVEL_COUNTS[i]; return s; }
+const TOTAL_REACH = cum(5);
+
+function bPolar(r,deg){ const a=deg*Math.PI/180; return [B_CENTER.x+r*Math.cos(a), B_CENTER.y+r*Math.sin(a)]; }
+
+const L1_ANGLES = [...Array(BRANCH)].map((_,i)=> -90 + i*(360/BRANCH));
+const L2 = [];
+L1_ANGLES.forEach((pa,i)=>{
+  const spread = 50;
+  for(let j=0;j<BRANCH;j++){
+    L2.push({angle: pa - spread/2 + j*(spread/(BRANCH-1)), parent: i});
+  }
+});
+
+const OPACITY_GHOST = 0.22;
+const OPACITY_DUST_GHOST = 0.16;
+const OPACITY_FRONTIER = 0.9;
+const OPACITY_ACTIVE = 1;
+
+function activate(g){
+  const c = g.querySelector('circle');
+  c.setAttribute('stroke', PAL.warn);
+  c.setAttribute('stroke-width', 3);
+  g.style.opacity = OPACITY_ACTIVE;
+}
+function deactivate(g, opacity){
+  const c = g.querySelector('circle');
+  c.setAttribute('stroke', PAL.ink);
+  c.setAttribute('stroke-width', c.getAttribute('data-sw'));
+  g.style.opacity = opacity;
+}
+
+let branchState = { stage:0, l1:null, l2:null };
+
+function buildBranch(){
+  clearSvg(branchSvg);
+  branchState = { stage:0, l1:null, l2:null };
+
+  const l1Groups = [];
+  L1_ANGLES.forEach((a,i)=>{
+    const [x,y] = bPolar(B_RADII[1], a);
+    const g = svgEl('g',{opacity:'0'});
+    g.style.cssText = 'transition:opacity .5s ease; cursor:pointer; pointer-events:none;';
+    g.appendChild(svgEl('line',{x1:B_CENTER.x,y1:B_CENTER.y,x2:x,y2:y, stroke:PAL.line,'stroke-width':1.5}));
+    g.appendChild(svgEl('circle',{cx:x,cy:y,r:8, fill:PAL.live, stroke:PAL.ink,'stroke-width':1.3,'data-sw':1.3}));
+    g.appendChild(svgEl('circle',{cx:x,cy:y,r:26, fill:'transparent'}));
+    g.addEventListener('click', ()=>selectL1(i));
+    branchSvg.appendChild(g);
+    l1Groups.push(g);
+  });
+
+  const l2Groups = [];
+  const l3Groups = [];
+  L2.forEach((n,idx)=>{
+    const [px,py] = bPolar(B_RADII[1], L1_ANGLES[n.parent]);
+    const [x,y] = bPolar(B_RADII[2], n.angle);
+    const g2 = svgEl('g',{opacity:'0'});
+    g2.style.cssText = 'transition:opacity .5s ease; cursor:pointer; pointer-events:none;';
+    g2.appendChild(svgEl('line',{x1:px,y1:py,x2:x,y2:y, stroke:PAL.line,'stroke-width':1}));
+    g2.appendChild(svgEl('circle',{cx:x,cy:y,r:4, fill:PAL.amber, stroke:PAL.ink,'stroke-width':0.8,'data-sw':0.8}));
+    g2.appendChild(svgEl('circle',{cx:x,cy:y,r:18, fill:'transparent'}));
+    g2.addEventListener('click', (e)=>{ e.stopPropagation(); selectL2(idx); });
+    branchSvg.appendChild(g2);
+    l2Groups.push(g2);
+
+    const g3 = svgEl('g',{opacity:'0'});
+    g3.style.cssText = 'transition:opacity .8s ease; pointer-events:none;';
+    for(let k=0;k<BRANCH;k++){
+      const jitter = (Math.random()-0.5)*18;
+      const [dx,dy] = bPolar(B_RADII[3]+(Math.random()-0.5)*20, n.angle+jitter);
+      g3.appendChild(svgEl('circle',{cx:dx,cy:dy,r:1.6, fill:PAL.accent, opacity:0.8}));
+    }
+    branchSvg.appendChild(g3);
+    l3Groups.push(g3);
+  });
+
+  const deg = svgEl('g',{});
+  deg.style.cursor = 'pointer';
+  deg.appendChild(svgEl('circle',{cx:B_CENTER.x,cy:B_CENTER.y,r:15, fill:PAL.ink}));
+  const dl = svgEl('text',{x:B_CENTER.x,y:B_CENTER.y+4,'text-anchor':'middle','font-family':'JetBrains Mono','font-weight':700,'font-size':10, fill:'#fff'});
+  dl.textContent = 'DEG';
+  deg.appendChild(dl);
+  deg.appendChild(svgEl('circle',{cx:B_CENTER.x,cy:B_CENTER.y,r:30, fill:'transparent'}));
+  deg.addEventListener('click', startBranch);
+  branchSvg.appendChild(deg);
+
+  branchSvg._l1Groups = l1Groups;
+  branchSvg._l2Groups = l2Groups;
+  branchSvg._l3Groups = l3Groups;
+
+  branchCaption.innerHTML = 'Klikk på den svarte sirkelen («DEG») for å starte.';
+  branchStatTag.textContent = 'Klikk på «DEG» for å se hvor stort nettverket egentlig er.';
+}
+buildBranch();
+
+function startBranch(){
+  if(branchState.stage !== 0) return;
+  branchState.stage = 1;
+  branchSvg._l1Groups.forEach(g=>{
+    g.style.opacity = OPACITY_FRONTIER;
+    g.style.pointerEvents = 'auto';
+  });
+  branchSvg._l2Groups.forEach(g=> g.style.opacity = OPACITY_GHOST);
+  branchSvg._l3Groups.forEach(g=> g.style.opacity = OPACITY_DUST_GHOST);
+  branchStatTag.innerHTML = `Teoretisk rekkevidde: <b>${TOTAL_REACH.toLocaleString('nb-NO')}</b> personer, bare fem steg unna deg — hele nettverket ser du med en gang, litt blasset i bakgrunnen.`;
+  branchCaption.innerHTML = '<b>Du har kanskje 5–6 relasjoner du bruker aktivt.</b> Klikk på én av dem for å følge tråden videre.';
+}
+
+function selectL1(i){
+  if(branchState.stage !== 1) return;
+  branchState.stage = 2;
+  branchState.l1 = i;
+  branchSvg._l1Groups.forEach((g,idx)=>{
+    g.style.cursor = 'default';
+    g.style.pointerEvents = 'none';
+    if(idx===i) activate(g); else deactivate(g, OPACITY_GHOST);
+  });
+  branchSvg._l2Groups.forEach((g,idx)=>{
+    if(L2[idx].parent === i){
+      g.style.opacity = OPACITY_FRONTIER;
+      g.style.pointerEvents = 'auto';
+    }
+  });
+  branchCaption.innerHTML = '<b>Denne personen har igjen sine egne 5–6 relasjoner.</b> Resten av valgene dine blir stående synlige, bare blassere — du følger fortsatt bare én tråd. Klikk på ett av de nye punktene.';
+}
+
+function selectL2(idx){
+  if(branchState.stage !== 2) return;
+  const n = L2[idx];
+  if(n.parent !== branchState.l1) return;
+  branchState.stage = 3;
+  branchState.l2 = idx;
+  branchSvg._l2Groups.forEach((g,i2)=>{
+    if(L2[i2].parent !== branchState.l1) return;
+    g.style.cursor = 'default';
+    g.style.pointerEvents = 'none';
+    if(i2===idx) activate(g); else deactivate(g, OPACITY_GHOST);
+  });
+  branchSvg._l3Groups[idx].style.opacity = OPACITY_ACTIVE;
+  branchCaption.innerHTML = '<b>Og igjen, og igjen.</b> Bare tre steg ut fra deg selv finnes det allerede godt over 250 personer i nettverket — hele potensialet står der, blasset, mens du selv bare fulgte denne ene, tydelige tråden.';
+}
+
+branchResetBtn.addEventListener('click', buildBranch);
+
+
+/* =========================================================
    SLIDE 2 — EXPONENTIAL REACH
    ========================================================= */
 const EXP_DATA = [
@@ -506,12 +673,37 @@ const PLATFORMS = [
   {name:'LinkedIn', note:'Over 1 milliard registrerte medlemmer — verdens største profesjonelle nettverk.'},
   {name:'X (tidligere Twitter)', note:'Rundt 500–600 millioner brukere hver måned.'}
 ];
-drawListRows('platformList', PLATFORMS, (p,i)=>`
-  <div class="mono" style="font-size:11px; color:var(--ink-faint); width:18px;">${String(i+1).padStart(2,'0')}</div>
-  <div style="flex:1; min-width:0;">
-    <div style="font-family:var(--serif); font-weight:600; font-size:15px;">${p.name}</div>
-    <div style="font-size:12px; color:var(--ink-soft); margin-top:2px;">${p.note}</div>
-  </div>`);
+function buildPlatformList(){
+  const list = document.getElementById('platformList');
+  list.innerHTML = '';
+  PLATFORMS.forEach((p,i)=>{
+    const row = document.createElement('div');
+    row.className = 'fade-item';
+    row.style.cssText = 'display:flex; align-items:center; gap:14px; padding:11px 14px; border:1px solid var(--line); border-radius:8px; background:var(--surface-2); cursor:pointer; transition:border-color .2s ease;';
+    row.innerHTML = `
+      <div class="mono" style="font-size:11px; color:var(--ink-faint); width:18px;">${String(i+1).padStart(2,'0')}</div>
+      <div style="flex:1; min-width:0;">
+        <div style="font-family:var(--serif); font-weight:600; font-size:15px;">${p.name}</div>
+        <div class="platform-note" style="font-size:12px; color:var(--ink-soft); margin-top:0; max-height:0; opacity:0; overflow:hidden; transition:max-height .35s ease, opacity .3s ease, margin-top .3s ease;">${p.note}</div>
+      </div>
+      <div class="platform-hint mono" style="font-size:10.5px; color:var(--accent); white-space:nowrap; flex:0 0 auto;">Klikk for fakta →</div>
+    `;
+    row.addEventListener('click', ()=>{
+      if(row.classList.contains('revealed')) return;
+      row.classList.add('revealed');
+      const note = row.querySelector('.platform-note');
+      note.style.maxHeight = '80px';
+      note.style.opacity = '1';
+      note.style.marginTop = '4px';
+      row.querySelector('.platform-hint').style.display = 'none';
+      row.style.borderColor = 'var(--accent)';
+      row.style.cursor = 'default';
+    });
+    list.appendChild(row);
+  });
+  fadeIn(list, 100, 110);
+}
+buildPlatformList();
 
 
 /* =========================================================
